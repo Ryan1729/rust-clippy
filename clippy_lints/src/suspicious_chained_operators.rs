@@ -1,4 +1,5 @@
 use crate::utils::{span_lint_and_sugg};
+use rustc_data_structures::fx::FxHashSet;
 use rustc_lint::{EarlyLintPass, EarlyContext};
 use rustc_session::{declare_lint_pass, declare_tool_lint};
 use rustc_ast::ast::*;
@@ -44,13 +45,15 @@ impl EarlyLintPass for SuspiciousChainedOperators {
             let mut double_difference_info = None;
             let mut expected_ident_loc = None;
 
+            let mut paired_identifiers = FxHashSet::default();
+
             for (i, BinaryOp{ left, right, .. }) in binops.iter().enumerate() {
                 match ident_differnce(left, right) {
                     NoDifference => {
                         // The `logic_bug` lint should catch this.
                         return;
                     }
-                    Single(ident_loc) => {
+                    Single(ident_loc, ident) => {
                         one_ident_difference_count += 1;
                         if let Some(previous_expected) = expected_ident_loc {
                             if previous_expected != ident_loc {
@@ -61,6 +64,8 @@ impl EarlyLintPass for SuspiciousChainedOperators {
                         } else {
                             expected_ident_loc = Some(ident_loc);
                         }
+
+                        paired_identifiers.insert(ident);
                     }
                     Double(ident_loc1, ident_loc2) => {
                         double_difference_info = Some((i, ident_loc1, ident_loc2));
@@ -77,8 +82,12 @@ impl EarlyLintPass for SuspiciousChainedOperators {
             if_chain! {
                 if one_ident_difference_count == pair_count - 1;
                 if let Some(expected_loc) = expected_ident_loc;
-                if let Some((i, ident_loc1, ident_loc2)) = double_difference_info;
-                if let Some(binop) = binop.get(i);
+                if let Some((
+                        double_difference_index,
+                        ident_loc1,
+                        ident_loc2
+                )) = double_difference_info;
+                if let Some(binop) = binops.get(double_difference_index);
                 then {
                     let changed_loc = if ident_loc1 == expected_loc {
                         ident_loc2
@@ -90,22 +99,59 @@ impl EarlyLintPass for SuspiciousChainedOperators {
                         return;
                     };
 
-                    // TODO: track whether the left or right ident should be
-                    // preferred instead of always picking the left one.
-                    let (left_span, right_span) = {
-                        let left_ident = get_ident(binop.left, changed_loc);
+                    let mut applicability = Applicability::MachineApplicable;
 
-                        (
-                            binop.right.span,
-                            set_ident_in_span(
-                                binop.right.span,
-                                changed_loc,
-                                left_ident
+                    let left_ident = get_ident(binop.left, changed_loc);
+                    let right_ident = get_ident(binop.right, changed_loc);
+
+                    let (left_span, right_span) = match (
+                        paired_identifiers.contains(&left_ident),
+                        paired_identifiers.contains(&right_ident),
+                    ) {
+                        (true, true)|(false, false) {
+                            // We don't have a good guess of what ident should be 
+                            // used instead, in these cases.
+                            applicability = Applicability::MaybeIncorrect;
+
+                            // We arbitraily choose one side to suggest changing,
+                            // since we don't have a better guess. If the user 
+                            // ends up duplicating a clause, the `logic_bug` lint
+                            // should catch it.
+                            (
+                                binop.left.span,
+                                set_ident_in_span(
+                                    binop.right.span,
+                                    changed_loc,
+                                    left_ident
+                                )
                             )
-                        )
+                        },
+                        (false, true) => {
+                            // We haven't seen a pair involving the left one, so 
+                            // it's probably what is wanted.
+                            (
+                                binop.left.span,
+                                set_ident_in_span(
+                                    binop.right.span,
+                                    changed_loc,
+                                    left_ident
+                                )
+                            )
+                        },
+                        (true, false) => {
+                            // We haven't seen a pair involving the right one, so 
+                            // it's probably what is wanted.
+                            (
+                                set_ident_in_span(
+                                    binop.left.span,
+                                    changed_loc,
+                                    right_ident
+                                )
+                                binop.right.span,
+                            )
+                        },
                     };
 
-                    let mut applicability = Applicability::MachineApplicable;
                     let sugg = format!(
                         "{} {} {}",
                         snippet_with_applicability(cx, left_span, "..", &mut applicability),
