@@ -1,8 +1,13 @@
-use crate::utils::{span_lint_and_sugg};
+use if_chain::if_chain;
+use crate::utils::{span_lint_and_sugg, snippet_with_applicability};
 use rustc_data_structures::fx::FxHashSet;
+use rustc_errors::Applicability;
 use rustc_lint::{EarlyLintPass, EarlyContext};
 use rustc_session::{declare_lint_pass, declare_tool_lint};
+use rustc_span::{Span};
+use rustc_span::symbol::Ident;
 use rustc_ast::ast::*;
+use rustc_ast::ptr::P;
 
 declare_clippy_lint! {
     /// **What it does:**
@@ -33,7 +38,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
             return;
         }
 
-        if let Some(binops) = chained_binops(expr.kind) {
+        if let Some(binops) = chained_binops(&expr.kind) {
             let binop_count = binops.len();
             if binop_count < 2 {
                 // Single binary operation expressions would likely be false
@@ -48,12 +53,12 @@ impl EarlyLintPass for SuspiciousChainedOperators {
             let mut paired_identifiers = FxHashSet::default();
 
             for (i, BinaryOp{ left, right, .. }) in binops.iter().enumerate() {
-                match ident_differnce(left, right) {
-                    NoDifference => {
+                match ident_difference(left, right) {
+                    IdentDifference::NoDifference => {
                         // The `logic_bug` lint should catch this.
                         return;
                     }
-                    Single(ident_loc, ident) => {
+                    IdentDifference::Single(ident_loc, ident) => {
                         one_ident_difference_count += 1;
                         if let Some(previous_expected) = expected_ident_loc {
                             if previous_expected != ident_loc {
@@ -67,10 +72,10 @@ impl EarlyLintPass for SuspiciousChainedOperators {
 
                         paired_identifiers.insert(ident);
                     }
-                    Double(ident_loc1, ident_loc2) => {
+                    IdentDifference::Double(ident_loc1, ident_loc2) => {
                         double_difference_info = Some((i, ident_loc1, ident_loc2));
                     }
-                    Multiple => {
+                    IdentDifference::Multiple => {
                         // It's too hard to know whether this is a bug or not.
                         // TODO: Do we need to recurse in order to find known
                         // buggy expressions inside complicated ones?
@@ -80,7 +85,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
             }
 
             if_chain! {
-                if one_ident_difference_count == pair_count - 1;
+                if one_ident_difference_count == binop_count - 1;
                 if let Some(expected_loc) = expected_ident_loc;
                 if let Some((
                         double_difference_index,
@@ -101,77 +106,93 @@ impl EarlyLintPass for SuspiciousChainedOperators {
 
                     let mut applicability = Applicability::MachineApplicable;
 
-                    let left_ident = get_ident(binop.left, changed_loc);
-                    let right_ident = get_ident(binop.right, changed_loc);
-
-                    let (left_span, right_span) = match (
-                        paired_identifiers.contains(&left_ident),
-                        paired_identifiers.contains(&right_ident),
+                    if let Some((left_span, right_span)) = correct_ident_in_spans(
+                        &paired_identifiers,
+                        binop,
+                        changed_loc,
+                        &mut applicability,
                     ) {
-                        (true, true)|(false, false) {
-                            // We don't have a good guess of what ident should be 
-                            // used instead, in these cases.
-                            applicability = Applicability::MaybeIncorrect;
-
-                            // We arbitraily choose one side to suggest changing,
-                            // since we don't have a better guess. If the user 
-                            // ends up duplicating a clause, the `logic_bug` lint
-                            // should catch it.
-                            (
-                                binop.left.span,
-                                set_ident_in_span(
-                                    binop.right.span,
-                                    changed_loc,
-                                    left_ident
-                                )
-                            )
-                        },
-                        (false, true) => {
-                            // We haven't seen a pair involving the left one, so 
-                            // it's probably what is wanted.
-                            (
-                                binop.left.span,
-                                set_ident_in_span(
-                                    binop.right.span,
-                                    changed_loc,
-                                    left_ident
-                                )
-                            )
-                        },
-                        (true, false) => {
-                            // We haven't seen a pair involving the right one, so 
-                            // it's probably what is wanted.
-                            (
-                                set_ident_in_span(
-                                    binop.left.span,
-                                    changed_loc,
-                                    right_ident
-                                )
-                                binop.right.span,
-                            )
-                        },
-                    };
-
-                    let sugg = format!(
-                        "{} {} {}",
-                        snippet_with_applicability(cx, left_span, "..", &mut applicability),
-                        op.op.to_string(),
-                        snippet_with_applicability(cx, right_span, "..", &mut applicability)
-                    );
-
-                    span_lint_and_sugg<'a, T: LintContext>(
-                        cx,
-                        SUSPICIOUS_CHAINED_OPERATORS,
-                        incorrect_expr_span,
-                        "This sequence of operators looks suspiciously like a bug.",
-                        "Did you mean",
-                        sugg,
-                        applicability,
-                    )
+                        let sugg = format!(
+                            "{} {} {}",
+                            snippet_with_applicability(cx, left_span, "..", &mut applicability),
+                            binop.op.to_string(),
+                            snippet_with_applicability(cx, right_span, "..", &mut applicability)
+                        );
+    
+                        span_lint_and_sugg(
+                            cx,
+                            SUSPICIOUS_CHAINED_OPERATORS,
+                            binop.span,
+                            "This sequence of operators looks suspiciously like a bug.",
+                            "Did you mean",
+                            sugg,
+                            applicability,
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+fn correct_ident_in_spans(
+    paired_identifiers: &FxHashSet<Ident>,
+    binop: &BinaryOp,
+    location: IdentLocation,
+    applicability: &mut Applicability,
+) -> Option<(Span, Span)> {
+    let left_ident = get_ident(&binop.left, location)?;
+    let right_ident = get_ident(&binop.right, location)?;
+
+    let (left_span, right_span) = match (
+        paired_identifiers.contains(&left_ident),
+        paired_identifiers.contains(&right_ident),
+    ) {
+        (true, true)|(false, false) => {
+            // We don't have a good guess of what ident should be 
+            // used instead, in these cases.
+            *applicability = Applicability::MaybeIncorrect;
+
+            // We arbitraily choose one side to suggest changing,
+            // since we don't have a better guess. If the user 
+            // ends up duplicating a clause, the `logic_bug` lint
+            // should catch it.
+            (
+                binop.left.span,
+                set_ident_in_span(
+                    &binop.right.span,
+                    location,
+                    left_ident
+                )?
+            )
+        },
+        (false, true) => {
+            // We haven't seen a pair involving the left one, so 
+            // it's probably what is wanted.
+            (
+                binop.left.span,
+                set_ident_in_span(
+                    &binop.right.span,
+                    location,
+                    left_ident
+                )?
+            )
+        },
+        (true, false) => {
+            // We haven't seen a pair involving the right one, so 
+            // it's probably what is wanted.
+            (
+                set_ident_in_span(
+                    &binop.left.span,
+                    location,
+                    right_ident
+                )?,
+                binop.right.span,
+            )
+        },
+    };
+
+    Some((left_span, right_span))
 }
 
 struct BinaryOp {
@@ -181,6 +202,34 @@ struct BinaryOp {
     right: P<Expr>,
 }
 
-fn chained_binops(kind: ExprKind) -> Option<&[BinaryOp]> {
+fn chained_binops(kind: &ExprKind) -> Option<Vec<BinaryOp>> {
+    todo!()
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct IdentLocation {
+
+}
+
+enum IdentDifference {
+    NoDifference,
+    Single(IdentLocation, Ident),
+    Double(IdentLocation, IdentLocation),
+    Multiple,
+}
+
+fn ident_difference(left: &Expr, right: &Expr) -> IdentDifference {
+    todo!()
+}
+
+fn get_ident(expr: &Expr, location: IdentLocation) -> Option<Ident> {
+    todo!()
+}
+
+fn set_ident_in_span(
+    span: &Span,
+    location: IdentLocation,
+    ident: Ident
+) -> Option<Span> {
     todo!()
 }
