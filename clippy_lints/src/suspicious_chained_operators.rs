@@ -106,19 +106,12 @@ impl EarlyLintPass for SuspiciousChainedOperators {
 
                     let mut applicability = Applicability::MachineApplicable;
 
-                    if let Some((left_span, right_span)) = correct_ident_in_spans(
+                    if let Some(sugg) = ident_swap_sugg(
                         &paired_identifiers,
                         binop,
                         changed_loc,
                         &mut applicability,
                     ) {
-                        let sugg = format!(
-                            "{} {} {}",
-                            snippet_with_applicability(cx, left_span, "..", &mut applicability),
-                            binop.op.to_string(),
-                            snippet_with_applicability(cx, right_span, "..", &mut applicability)
-                        );
-    
                         span_lint_and_sugg(
                             cx,
                             SUSPICIOUS_CHAINED_OPERATORS,
@@ -135,16 +128,16 @@ impl EarlyLintPass for SuspiciousChainedOperators {
     }
 }
 
-fn correct_ident_in_spans(
+fn ident_swap_sugg(
     paired_identifiers: &FxHashSet<Ident>,
     binop: &BinaryOp,
     location: IdentLocation,
     applicability: &mut Applicability,
-) -> Option<(Span, Span)> {
+) -> Option<String> {
     let left_ident = get_ident(&binop.left, location)?;
     let right_ident = get_ident(&binop.right, location)?;
 
-    let (left_span, right_span) = match (
+    match (
         paired_identifiers.contains(&left_ident),
         paired_identifiers.contains(&right_ident),
     ) {
@@ -157,42 +150,19 @@ fn correct_ident_in_spans(
             // since we don't have a better guess. If the user 
             // ends up duplicating a clause, the `logic_bug` lint
             // should catch it.
-            (
-                binop.left.span,
-                set_ident_in_span(
-                    &binop.right.span,
-                    location,
-                    left_ident
-                )?
-            )
+            todo!("use left ident on right side")
         },
         (false, true) => {
             // We haven't seen a pair involving the left one, so 
             // it's probably what is wanted.
-            (
-                binop.left.span,
-                set_ident_in_span(
-                    &binop.right.span,
-                    location,
-                    left_ident
-                )?
-            )
+            todo!("use left ident on right side")
         },
         (true, false) => {
             // We haven't seen a pair involving the right one, so 
             // it's probably what is wanted.
-            (
-                set_ident_in_span(
-                    &binop.left.span,
-                    location,
-                    right_ident
-                )?,
-                binop.right.span,
-            )
+            todo!("use right ident on left side")
         },
-    };
-
-    Some((left_span, right_span))
+    }
 }
 
 struct BinaryOp {
@@ -223,13 +193,5 @@ fn ident_difference(left: &Expr, right: &Expr) -> IdentDifference {
 }
 
 fn get_ident(expr: &Expr, location: IdentLocation) -> Option<Ident> {
-    todo!()
-}
-
-fn set_ident_in_span(
-    span: &Span,
-    location: IdentLocation,
-    ident: Ident
-) -> Option<Span> {
     todo!()
 }
