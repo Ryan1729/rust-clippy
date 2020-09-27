@@ -75,7 +75,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
                     IdentDifference::Double(ident_loc1, ident_loc2) => {
                         double_difference_info = Some((i, ident_loc1, ident_loc2));
                     }
-                    IdentDifference::Multiple => {
+                    IdentDifference::Multiple | IdentDifference::NonIdentDifference => {
                         // It's too hard to know whether this is a bug or not.
                         // TODO: Do we need to recurse in order to find known
                         // buggy expressions inside complicated ones?
@@ -154,9 +154,11 @@ fn ident_swap_sugg(
             // should catch it.
 
             let right_suggestion = suggestion_with_swapped_ident(
+                cx,
                 &binop.right,
                 location,
                 left_ident,
+                applicability,
             )?;
 
             format!(
@@ -171,9 +173,11 @@ fn ident_swap_sugg(
             // it's probably what is wanted.
 
             let right_suggestion = suggestion_with_swapped_ident(
+                cx,
                 &binop.right,
                 location,
                 left_ident,
+                applicability,
             )?;
 
             format!(
@@ -186,13 +190,17 @@ fn ident_swap_sugg(
         (true, false) => {
             // We haven't seen a pair involving the right one, so 
             // it's probably what is wanted.
+            let left_suggestion = suggestion_with_swapped_ident(
+                cx,
+                &binop.left,
+                location,
+                right_ident,
+                applicability,
+            )?;
+
             format!(
                 "{} {} {}",
-                suggestion_with_swapped_ident(
-                    &binop.left,
-                    location,
-                    right_ident,
-                )?,
+                left_suggestion,
                 binop.op.to_string(),
                 snippet_with_applicability(cx, binop.right.span, "..", applicability),
             )
@@ -215,7 +223,7 @@ fn chained_binops(kind: &ExprKind) -> Option<Vec<BinaryOp>> {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct IdentLocation {
-
+    index: usize,
 }
 
 enum IdentDifference {
@@ -223,20 +231,68 @@ enum IdentDifference {
     Single(IdentLocation, Ident),
     Double(IdentLocation, IdentLocation),
     Multiple,
+    NonIdentDifference,
 }
 
 fn ident_difference(left: &Expr, right: &Expr) -> IdentDifference {
+    // This function cannot use IdentIter because it should return early
+    // if the expressions have any non-ident differences.
     todo!()
 }
 
 fn get_ident(expr: &Expr, location: IdentLocation) -> Option<Ident> {
-    todo!()
+    IdentIter::new(expr)
+        .nth(location.index)
+        .map(|(ident, _)| ident)
 }
 
 fn suggestion_with_swapped_ident(
+    cx: &EarlyContext<'_>,
     expr: &Expr,
     location: IdentLocation,
-    ident: Ident
+    ident: Ident,
+    applicability: &mut Applicability,
 ) -> Option<String> {
-    todo!()
+    IdentIter::new(expr)
+        .nth(location.index)
+        .map(|(current_ident, current_expr)| {
+            format!(
+                "{}{}{}",
+                snippet_with_applicability(
+                    cx,
+                    current_expr.span
+                        .with_hi(current_ident.span.lo()),
+                    "..",
+                    applicability
+                ),
+                current_ident.to_string(),
+                snippet_with_applicability(
+                    cx,
+                    current_expr.span
+                        .with_lo(current_ident.span.hi()),
+                    "..",
+                    applicability
+                ),
+            )
+        })
+}
+
+struct IdentIter<'expr> {
+    expr: &'expr Expr,
+}
+
+impl <'expr> IdentIter<'expr> {
+    fn new(expr: &'expr Expr) -> Self {
+        IdentIter {
+            expr,
+        }
+    }
+}
+
+impl <'expr> Iterator for IdentIter<'expr> {
+    type Item = (Ident, &'expr Expr);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
 }
