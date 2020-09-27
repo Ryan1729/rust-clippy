@@ -59,7 +59,7 @@ fn changed_middle_ident(n1: &Nested, n2: &Nested) -> bool {
     && n1.inner.2.0 == n2.inner.1.0
 }
 
-// This one is already caught by `logic_bug`
+// This one is already caught by `eq_op`
 fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
     // There's no `n2.inner.0.0`
     n1.inner.0.0 == n1.inner.0.0

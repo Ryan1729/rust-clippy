@@ -55,7 +55,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
             for (i, BinaryOp{ left, right, .. }) in binops.iter().enumerate() {
                 match ident_difference(left, right) {
                     IdentDifference::NoDifference => {
-                        // The `logic_bug` lint should catch this.
+                        // The `eq_op` lint should catch this if it's an issue.
                         return;
                     }
                     IdentDifference::Single(ident_loc, ident) => {
@@ -107,6 +107,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
                     let mut applicability = Applicability::MachineApplicable;
 
                     if let Some(sugg) = ident_swap_sugg(
+                        cx,
                         &paired_identifiers,
                         binop,
                         changed_loc,
@@ -129,6 +130,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
 }
 
 fn ident_swap_sugg(
+    cx: &EarlyContext<'_>,
     paired_identifiers: &FxHashSet<Ident>,
     binop: &BinaryOp,
     location: IdentLocation,
@@ -137,7 +139,7 @@ fn ident_swap_sugg(
     let left_ident = get_ident(&binop.left, location)?;
     let right_ident = get_ident(&binop.right, location)?;
 
-    match (
+    let sugg = match (
         paired_identifiers.contains(&left_ident),
         paired_identifiers.contains(&right_ident),
     ) {
@@ -150,19 +152,54 @@ fn ident_swap_sugg(
             // since we don't have a better guess. If the user 
             // ends up duplicating a clause, the `logic_bug` lint
             // should catch it.
-            todo!("use left ident on right side")
+
+            let right_suggestion = suggestion_with_swapped_ident(
+                &binop.right,
+                location,
+                left_ident,
+            )?;
+
+            format!(
+                "{} {} {}",
+                snippet_with_applicability(cx, binop.left.span, "..", applicability),
+                binop.op.to_string(),
+                right_suggestion,
+            )
         },
         (false, true) => {
             // We haven't seen a pair involving the left one, so 
             // it's probably what is wanted.
-            todo!("use left ident on right side")
+
+            let right_suggestion = suggestion_with_swapped_ident(
+                &binop.right,
+                location,
+                left_ident,
+            )?;
+
+            format!(
+                "{} {} {}",
+                snippet_with_applicability(cx, binop.left.span, "..", applicability),
+                binop.op.to_string(),
+                right_suggestion,
+            )
         },
         (true, false) => {
             // We haven't seen a pair involving the right one, so 
             // it's probably what is wanted.
-            todo!("use right ident on left side")
+            format!(
+                "{} {} {}",
+                suggestion_with_swapped_ident(
+                    &binop.left,
+                    location,
+                    right_ident,
+                )?,
+                binop.op.to_string(),
+                snippet_with_applicability(cx, binop.right.span, "..", applicability),
+            )
         },
-    }
+    };
+
+    Some(sugg)
 }
 
 struct BinaryOp {
@@ -193,5 +230,13 @@ fn ident_difference(left: &Expr, right: &Expr) -> IdentDifference {
 }
 
 fn get_ident(expr: &Expr, location: IdentLocation) -> Option<Ident> {
+    todo!()
+}
+
+fn suggestion_with_swapped_ident(
+    expr: &Expr,
+    location: IdentLocation,
+    ident: Ident
+) -> Option<String> {
     todo!()
 }
