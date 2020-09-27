@@ -43,6 +43,11 @@ fn inside_other_binop_expression(s1: &S, s2: &S) -> i32 {
     (s1.a * s2.a + s2.b * s2.b) / 2
 }
 
+fn inside_larger_boolean_expression(s1: &S, s2: &S) -> bool {
+    // There's no `s1.c`
+    s1.a > 0 && s1.b > 0 && s1.d == s2.c && s1.d == s2.d
+}
+
 fn inside_function_call(s1: &S, s2: &S) -> i32 {
     // There's no `s1.b`
     i32::swap_bytes(s1.a * s2.a + s2.b * s2.b)
