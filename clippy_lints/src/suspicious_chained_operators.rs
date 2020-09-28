@@ -278,13 +278,13 @@ fn suggestion_with_swapped_ident(
 }
 
 struct IdentIter<'expr> {
-    expr: &'expr Expr,
+    expr: Option<&'expr Expr>,
 }
 
 impl <'expr> IdentIter<'expr> {
     fn new(expr: &'expr Expr) -> Self {
         IdentIter {
-            expr,
+            expr: Some(expr),
         }
     }
 }
@@ -293,6 +293,17 @@ impl <'expr> Iterator for IdentIter<'expr> {
     type Item = (Ident, &'expr Expr);
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        if let Some(current_expr) = self.expr.take() {
+            let (ident_opt, next_expr) = match current_expr.kind {
+                ExprKind::Lit(_) => (None, None),
+                _ => todo!(),
+            };
+
+            self.expr = next_expr;
+
+            ident_opt.map(move |ident| (ident, current_expr))
+        } else {
+            None
+        }
     }
 }
