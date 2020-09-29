@@ -1,3 +1,4 @@
+use core::iter::FusedIterator;
 use if_chain::if_chain;
 use crate::utils::{span_lint_and_sugg, snippet_with_applicability};
 use rustc_data_structures::fx::FxHashSet;
@@ -279,12 +280,14 @@ fn suggestion_with_swapped_ident(
 
 struct IdentIter<'expr> {
     expr: Option<&'expr Expr>,
+    path_iter: Option<PathIdentIter<'expr>>,
 }
 
 impl <'expr> IdentIter<'expr> {
     fn new(expr: &'expr Expr) -> Self {
-        IdentIter {
+        Self {
             expr: Some(expr),
+            path_iter: None,
         }
     }
 }
@@ -294,10 +297,10 @@ impl <'expr> Iterator for IdentIter<'expr> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(current_expr) = self.expr.take() {
-            let (ident_opt, next_expr) = match current_expr.kind {
-                ExprKind::Lit(_) => (None, None),
-                _ => todo!(),
-            };
+            let (ident_opt, next_expr) = next_option_pair(
+                &current_expr,
+                &mut self.path_iter,
+            );
 
             self.expr = next_expr;
 
@@ -307,3 +310,61 @@ impl <'expr> Iterator for IdentIter<'expr> {
         }
     }
 }
+
+fn next_option_pair<'expr>(
+    current_expr: &'expr Expr,
+    path_iter: &mut Option<PathIdentIter<'expr>>
+) -> (Option<Ident>, Option<&'expr Expr>) {
+    if let Some(mut p_iter) = path_iter.take() {
+        let output = p_iter.next();
+
+        if output.is_some() {
+            *path_iter = Some(p_iter);
+            return (output, Some(current_expr));
+        }
+    }
+
+    match current_expr.kind {
+        ExprKind::Lit(_)|ExprKind::Err => (None, None),
+        ExprKind::Path(_, ref path) => {
+            let mut p_iter = PathIdentIter::new(path);
+            let next_ident = p_iter.next();
+
+            *path_iter = Some(p_iter);
+
+            (next_ident, Some(current_expr))
+        },
+        _ => todo!(),
+    }
+}
+
+impl <'expr> FusedIterator for IdentIter<'expr> {}
+
+struct PathIdentIter<'path> {
+    path: &'path Path,
+    segment_index: usize,
+}
+
+impl <'path> PathIdentIter<'path> {
+    fn new(path: &'path Path) -> Self {
+        Self {
+            path,
+            segment_index: 0,
+        }
+    }
+}
+
+impl <'path> Iterator for PathIdentIter<'path> {
+    type Item = Ident;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(segment) = self.path.segments.get(self.segment_index) {
+            self.segment_index += 1;
+            Some(segment.ident)
+        } else {
+            None
+        }
+    }
+}
+
+impl <'path> FusedIterator for PathIdentIter<'path> {}
