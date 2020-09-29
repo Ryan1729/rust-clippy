@@ -1,4 +1,4 @@
-use core::iter::FusedIterator;
+use core::iter::{self, FusedIterator};
 use if_chain::if_chain;
 use crate::utils::{span_lint_and_sugg, snippet_with_applicability};
 use rustc_data_structures::fx::FxHashSet;
@@ -357,6 +357,17 @@ impl <'expr> Iterator for IdentIter<'expr> {
             ExprKind::Call(ref func, ref args) => {
                 set_and_call_next!(
                     IdentIter::new(func)
+                        .chain(
+                            args.iter()
+                                .flat_map(IdentIter::new_p)
+                        )
+                )
+            },
+            ExprKind::MethodCall(ref method_name, ref args, _) => {
+                let current_expr: &'expr Expr = self.expr;
+
+                set_and_call_next!(
+                    iter::once((method_name.ident, current_expr))
                         .chain(
                             args.iter()
                                 .flat_map(IdentIter::new_p)
