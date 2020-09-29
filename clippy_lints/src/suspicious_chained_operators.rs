@@ -294,6 +294,11 @@ impl <'expr> IdentIter<'expr> {
             done: false,
         }
     }
+
+    /// This is a convenience method to help with type inference.
+    fn new_p(expr: &'expr P<Expr>) -> Self {
+        Self::new(expr)
+    }
 }
 
 impl <'expr> Iterator for IdentIter<'expr> {
@@ -346,7 +351,7 @@ impl <'expr> Iterator for IdentIter<'expr> {
             ExprKind::Array(ref exprs) => {
                 set_and_call_next!(
                     exprs.iter()
-                        .flat_map(|expr| IdentIter::new(expr))
+                        .flat_map(IdentIter::new_p)
                 )
             },
             ExprKind::Call(ref func, ref args) => {
@@ -354,7 +359,7 @@ impl <'expr> Iterator for IdentIter<'expr> {
                     IdentIter::new(func)
                         .chain(
                             args.iter()
-                                .flat_map(|expr| IdentIter::new(expr))
+                                .flat_map(IdentIter::new_p)
                         )
                 )
             },
