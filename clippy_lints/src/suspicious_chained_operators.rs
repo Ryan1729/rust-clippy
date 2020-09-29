@@ -278,18 +278,20 @@ fn suggestion_with_swapped_ident(
         })
 }
 
-type Inner<'a> = Box<dyn Iterator<Item = Ident> + 'a>;
+type Inner<'a> = Box<dyn Iterator<Item = <IdentIter<'a> as Iterator>::Item> + 'a>;
 
 struct IdentIter<'expr> {
-    expr: Option<&'expr Expr>,
+    expr: &'expr Expr,
     inner: Option<Inner<'expr>>,
+    done: bool,
 }
 
 impl <'expr> IdentIter<'expr> {
     fn new(expr: &'expr Expr) -> Self {
         Self {
-            expr: Some(expr),
+            expr,
             inner: None,
+            done: false,
         }
     }
 }
@@ -298,56 +300,45 @@ impl <'expr> Iterator for IdentIter<'expr> {
     type Item = (Ident, &'expr Expr);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(current_expr) = self.expr.take() {
-            let (ident_opt, next_expr) = next_option_pair(
-                &current_expr,
-                &mut self.inner,
-            );
-
-            self.expr = next_expr;
-
-            ident_opt.map(move |ident| (ident, current_expr))
-        } else {
-            None
+        if self.done {
+            return None;
         }
-    }
-}
 
-fn next_option_pair<'expr>(
-    current_expr: &'expr Expr,
-    inner_opt: &mut Option<Inner<'expr>>,
-) -> (Option<Ident>, Option<&'expr Expr>) {
-    if let Some(mut inner) = inner_opt.take() {
-        let output = inner.next();
+        let inner_opt = &mut self.inner;
 
-        if output.is_some() {
-            *inner_opt = Some(inner);
-            return (output, Some(current_expr));
+        if let Some(mut inner) = inner_opt.take() {
+            let output = inner.next();
+
+            if output.is_some() {
+                *inner_opt = Some(inner);
+                return output;
+            }
         }
-    }
 
-    match current_expr.kind {
-        ExprKind::Lit(_)|ExprKind::Err => (None, None),
-        ExprKind::Path(_, ref path)
-        | ExprKind::MacCall(MacCall{ ref path, ..}) => {
-            let mut p_iter = path.segments.iter().map(|s| s.ident);
-            let next_ident = p_iter.next();
+        match self.expr.kind {
+            ExprKind::Lit(_)|ExprKind::Err => None,
+            ExprKind::Path(_, ref path)
+            | ExprKind::MacCall(MacCall{ ref path, ..}) => {
+                let current_expr: &'expr Expr = self.expr;
 
-            *inner_opt = Some(Box::new(p_iter));
+                let mut p_iter = path.segments.iter()
+                    .map(move |s| (s.ident, current_expr));
+                let next_item = p_iter.next();
 
-            (next_ident, Some(current_expr))
-        },
-        ExprKind::Box(ref expr) => {
-            let mut e_iter = IdentIter::new(expr)
-                // TODO: should I actually be passing this _expr back up each time?
-                .map(|(ident, _expr)| ident);
-            let next_ident = e_iter.next();
+                *inner_opt = Some(Box::new(p_iter));
 
-            *inner_opt = Some(Box::new(e_iter));
+                next_item
+            },
+            ExprKind::Box(ref expr) => {
+                let mut e_iter = IdentIter::new(expr);
+                let next_item = e_iter.next();
 
-            (next_ident, Some(expr))
-        },
-        _ => todo!(),
+                *inner_opt = Some(Box::new(e_iter));
+
+                next_item
+            },
+            _ => todo!(),
+        }
     }
 }
 
