@@ -337,6 +337,15 @@ impl <'expr> Iterator for IdentIter<'expr> {
 
                 next_item
             },
+            ExprKind::Array(ref exprs) => {
+                let mut e_iter = exprs.iter()
+                    .flat_map(|expr| IdentIter::new(expr));
+                let next_item = e_iter.next();
+
+                *inner_opt = Some(Box::new(e_iter));
+
+                next_item
+            },
             _ => todo!(),
         };
 
