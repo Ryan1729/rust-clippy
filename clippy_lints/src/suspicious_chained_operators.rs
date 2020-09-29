@@ -343,7 +343,8 @@ impl <'expr> Iterator for IdentIter<'expr> {
                         .map(move |s| (s.ident, current_expr))
                 )
             },
-            ExprKind::Box(ref expr) => {
+            ExprKind::Box(ref expr)
+            | ExprKind::Unary(_, ref expr) => {
                 set_and_call_next!(
                     IdentIter::new(expr)
                 )
