@@ -348,7 +348,7 @@ impl <'expr> Iterator for IdentIter<'expr> {
                     IdentIter::new(expr)
                 )
             },
-            ExprKind::Array(ref exprs) => {
+            ExprKind::Array(ref exprs)|ExprKind::Tup(ref exprs) => {
                 set_and_call_next!(
                     exprs.iter()
                         .flat_map(IdentIter::new_p)
@@ -371,6 +371,14 @@ impl <'expr> Iterator for IdentIter<'expr> {
                         .chain(
                             args.iter()
                                 .flat_map(IdentIter::new_p)
+                        )
+                )
+            },
+            ExprKind::Binary(_, ref left, ref right) => {
+                set_and_call_next!(
+                    IdentIter::new(left)
+                        .chain(
+                            IdentIter::new(right)
                         )
                 )
             },
