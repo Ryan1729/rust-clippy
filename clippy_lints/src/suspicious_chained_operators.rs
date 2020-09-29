@@ -337,6 +337,16 @@ fn next_option_pair<'expr>(
 
             (next_ident, Some(current_expr))
         },
+        ExprKind::Box(ref expr) => {
+            let mut e_iter = IdentIter::new(expr)
+                // TODO: should I actually be passing this _expr back up each time?
+                .map(|(ident, _expr)| ident);
+            let next_ident = e_iter.next();
+
+            *inner_opt = Some(Box::new(e_iter));
+
+            (next_ident, Some(expr))
+        },
         _ => todo!(),
     }
 }
