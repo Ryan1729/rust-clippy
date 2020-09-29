@@ -315,7 +315,7 @@ impl <'expr> Iterator for IdentIter<'expr> {
             }
         }
 
-        match self.expr.kind {
+        let output = match self.expr.kind {
             ExprKind::Lit(_)|ExprKind::Err => None,
             ExprKind::Path(_, ref path)
             | ExprKind::MacCall(MacCall{ ref path, ..}) => {
@@ -338,7 +338,13 @@ impl <'expr> Iterator for IdentIter<'expr> {
                 next_item
             },
             _ => todo!(),
+        };
+
+        if output.is_none() {
+            self.done = true;
         }
+
+        output
     }
 }
 
