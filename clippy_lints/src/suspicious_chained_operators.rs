@@ -328,7 +328,8 @@ fn next_option_pair<'expr>(
 
     match current_expr.kind {
         ExprKind::Lit(_)|ExprKind::Err => (None, None),
-        ExprKind::Path(_, ref path) => {
+        ExprKind::Path(_, ref path)
+        | ExprKind::MacCall(MacCall{ ref path, ..}) => {
             let mut p_iter = path.segments.iter().map(|s| s.ident);
             let next_ident = p_iter.next();
 
