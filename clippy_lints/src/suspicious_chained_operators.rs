@@ -349,6 +349,15 @@ impl <'expr> Iterator for IdentIter<'expr> {
                         .flat_map(|expr| IdentIter::new(expr))
                 )
             },
+            ExprKind::Call(ref func, ref args) => {
+                set_and_call_next!(
+                    IdentIter::new(func)
+                        .chain(
+                            args.iter()
+                                .flat_map(|expr| IdentIter::new(expr))
+                        )
+                )
+            },
             _ => todo!(),
         };
 
