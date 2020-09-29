@@ -315,36 +315,39 @@ impl <'expr> Iterator for IdentIter<'expr> {
             }
         }
 
+        macro_rules! set_and_call_next {
+            ($iter: expr) => {{
+                let mut p_iter = $iter;
+
+                let next_item = p_iter.next();
+
+                *inner_opt = Some(Box::new(p_iter));
+
+                next_item
+            }}
+        }
+
         let output = match self.expr.kind {
             ExprKind::Lit(_)|ExprKind::Err => None,
             ExprKind::Path(_, ref path)
             | ExprKind::MacCall(MacCall{ ref path, ..}) => {
                 let current_expr: &'expr Expr = self.expr;
 
-                let mut p_iter = path.segments.iter()
-                    .map(move |s| (s.ident, current_expr));
-                let next_item = p_iter.next();
-
-                *inner_opt = Some(Box::new(p_iter));
-
-                next_item
+                set_and_call_next!(
+                    path.segments.iter()
+                        .map(move |s| (s.ident, current_expr))
+                )
             },
             ExprKind::Box(ref expr) => {
-                let mut e_iter = IdentIter::new(expr);
-                let next_item = e_iter.next();
-
-                *inner_opt = Some(Box::new(e_iter));
-
-                next_item
+                set_and_call_next!(
+                    IdentIter::new(expr)
+                )
             },
             ExprKind::Array(ref exprs) => {
-                let mut e_iter = exprs.iter()
-                    .flat_map(|expr| IdentIter::new(expr));
-                let next_item = e_iter.next();
-
-                *inner_opt = Some(Box::new(e_iter));
-
-                next_item
+                set_and_call_next!(
+                    exprs.iter()
+                        .flat_map(|expr| IdentIter::new(expr))
+                )
             },
             _ => todo!(),
         };
