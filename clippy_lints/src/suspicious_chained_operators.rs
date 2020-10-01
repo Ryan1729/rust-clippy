@@ -244,7 +244,6 @@ fn ident_difference(left: &Expr, right: &Expr) -> IdentDifference {
 fn get_ident(expr: &Expr, location: IdentLocation) -> Option<Ident> {
     IdentIter::new(expr)
         .nth(location.index)
-        .map(|(ident, _)| ident)
 }
 
 fn suggestion_with_swapped_ident(
@@ -254,14 +253,13 @@ fn suggestion_with_swapped_ident(
     ident: Ident,
     applicability: &mut Applicability,
 ) -> Option<String> {
-    IdentIter::new(expr)
-        .nth(location.index)
-        .map(|(current_ident, current_expr)| {
+    get_ident(expr, location)
+        .map(|current_ident| {
             format!(
                 "{}{}{}",
                 snippet_with_applicability(
                     cx,
-                    current_expr.span
+                    expr.span
                         .with_hi(current_ident.span.lo()),
                     "..",
                     applicability
@@ -269,7 +267,7 @@ fn suggestion_with_swapped_ident(
                 current_ident.to_string(),
                 snippet_with_applicability(
                     cx,
-                    current_expr.span
+                    expr.span
                         .with_lo(current_ident.span.hi()),
                     "..",
                     applicability
@@ -302,7 +300,7 @@ impl <'expr> IdentIter<'expr> {
 }
 
 impl <'expr> Iterator for IdentIter<'expr> {
-    type Item = (Ident, &'expr Expr);
+    type Item = Ident;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -336,11 +334,9 @@ impl <'expr> Iterator for IdentIter<'expr> {
             ExprKind::Lit(_)|ExprKind::Err => None,
             ExprKind::Path(_, ref path)
             | ExprKind::MacCall(MacCall{ ref path, ..}) => {
-                let current_expr: &'expr Expr = self.expr;
-
                 set_and_call_next!(
                     path.segments.iter()
-                        .map(move |s| (s.ident, current_expr))
+                        .map(|s| s.ident)
                 )
             },
             ExprKind::Box(ref expr)
@@ -365,10 +361,8 @@ impl <'expr> Iterator for IdentIter<'expr> {
                 )
             },
             ExprKind::MethodCall(ref method_name, ref args, _) => {
-                let current_expr: &'expr Expr = self.expr;
-
                 set_and_call_next!(
-                    iter::once((method_name.ident, current_expr))
+                    iter::once(method_name.ident)
                         .chain(
                             args.iter()
                                 .flat_map(IdentIter::new_p)
