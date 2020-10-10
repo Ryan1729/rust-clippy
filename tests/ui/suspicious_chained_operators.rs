@@ -33,6 +33,14 @@ fn non_boolean_operators(s1: &S, s2: &S) -> i32 {
     s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d
 }
 
+fn the_cross_product_should_not_lint(s1: &S, s2: &S) -> (i32, i32, i32) {
+    (
+        s1.b * s2.c - s1.c * s2.b,
+        s1.c * s2.a - s1.a * s2.c,
+        s1.a * s2.b - s1.b * s2.a,
+    )
+}
+
 fn parens(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     (s1.a + s2.a) * (s1.b + s2.b) * (s1.c + s2.b) * (s1.d + s2.d)
