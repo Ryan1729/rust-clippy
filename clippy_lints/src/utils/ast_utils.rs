@@ -11,6 +11,7 @@ use rustc_span::symbol::Ident;
 use std::mem;
 
 pub mod ident_iter;
+pub use ident_iter::IdentIter;
 
 /// Checks if each element in the first slice is contained within the latter as per `eq_fn`.
 pub fn unordered_over<X>(left: &[X], right: &[X], mut eq_fn: impl FnMut(&X, &X) -> bool) -> bool {

@@ -1,4 +1,5 @@
-use crate::utils::{ast_utils::eq_id, snippet_with_applicability, span_lint_and_sugg};
+use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
+use crate::utils::ast_utils::{eq_id, IdentIter};
 use core::iter::FusedIterator;
 use core::ops::{Add, AddAssign};
 use if_chain::if_chain;
@@ -368,28 +369,3 @@ fn suggestion_with_swapped_ident(
     })
 }
 
-// TODO replace this with a call to code from
-// https://github.com/rust-lang/rust-clippy/pull/6100 once that is merged.
-struct IdentIter {}
-
-impl Iterator for IdentIter {
-    type Item = Ident;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
-}
-
-impl FusedIterator for IdentIter {}
-
-impl From<&Expr> for IdentIter {
-    fn from(expr: &Expr) -> Self {
-        todo!()
-    }
-}
-
-impl From<&Attribute> for IdentIter {
-    fn from(attr: &Attribute) -> Self {
-        todo!()
-    }
-}
