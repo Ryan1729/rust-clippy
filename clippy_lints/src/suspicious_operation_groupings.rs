@@ -360,16 +360,15 @@ fn suggestion_with_swapped_ident(
     cx: &EarlyContext<'_>,
     expr: &Expr,
     location: IdentLocation,
-    ident: Ident,
+    new_ident: Ident,
     applicability: &mut Applicability,
 ) -> Option<String> {
-    get_ident(expr, location).map(|current_ident| {
+    get_ident(expr, location).and_then(|current_ident| {
         format!(
             "{}{}{}",
             snippet_with_applicability(cx, expr.span.with_hi(current_ident.span.lo()), "..", applicability),
-            current_ident.to_string(),
+            new_ident.to_string(),
             snippet_with_applicability(cx, expr.span.with_lo(current_ident.span.hi()), "..", applicability),
         )
     })
 }
-
