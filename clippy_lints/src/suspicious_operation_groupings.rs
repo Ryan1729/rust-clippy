@@ -1,6 +1,5 @@
-use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
 use crate::utils::ast_utils::{eq_id, IdentIter};
-use core::iter::FusedIterator;
+use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
 use core::ops::{Add, AddAssign};
 use if_chain::if_chain;
 use rustc_ast::ast::*;
@@ -204,6 +203,8 @@ struct BinaryOp {
     right: P<Expr>,
 }
 
+// TODO make this collect expr pairs in (for example) if expressions, and rename it.
+// Also, include enough info to make a coherent suggestion.
 fn chained_binops(kind: &ExprKind) -> Option<Vec<BinaryOp>> {
     todo!()
 }
@@ -217,8 +218,8 @@ impl Add for IdentLocation {
     type Output = IdentLocation;
 
     fn add(self, other: Self) -> Self::Output {
-        match (self, other) {
-            _ => todo!(),
+        Self {
+            index: self.index + other.index,
         }
     }
 }
@@ -243,7 +244,14 @@ impl Add for IdentDifference {
 
     fn add(self, other: Self) -> Self::Output {
         match (self, other) {
-            _ => todo!(),
+            (Self::NoDifference, output) | (output, Self::NoDifference) => output,
+            (Self::Multiple, _)
+            | (_, Self::Multiple)
+            | (Self::Single(_, _), Self::Double(_, _))
+            | (Self::Double(_, _), Self::Single(_, _))
+            | (Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
+            (Self::NonIdentDifference, _) | (_, Self::NonIdentDifference) => Self::NonIdentDifference,
+            (Self::Single(il1, _), Self::Single(il2, _)) => Self::Double(il1, il2),
         }
     }
 }
@@ -308,10 +316,6 @@ fn ident_difference_expr_with_base_location(
     match (&left.kind, &right.kind) {
         _ => todo!(),
     }
-}
-
-fn ident_difference_via_ident_iter<Iterable: Into<IdentIter>>(left: Iterable, right: Iterable) -> IdentDifference {
-    ident_difference_via_ident_iter_with_base_location(left, right, IdentLocation::default()).0
 }
 
 fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>(
