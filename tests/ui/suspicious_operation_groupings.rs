@@ -61,6 +61,21 @@ fn inside_function_call(s1: &S, s2: &S) -> i32 {
     i32::swap_bytes(s1.a * s2.a + s2.b * s2.b)
 }
 
+fn inside_if_statements(s: &mut S) {
+    if s.a > s.c {
+        s.a = s.c;
+    }
+    if s.a < -s.c {
+        s.a = -s.c;
+    }
+    if s.b > s.c { // `s.c` should be `s.d` here.
+        s.b = s.d;
+    }
+    if (s.b < -s.d) {
+        s.b = -s.d;
+    }
+}
+
 struct Nested {
     inner: ((i32,), (i32,), (i32,))
 }
