@@ -1,5 +1,5 @@
-use crate::utils::ast_utils::{eq_id, IdentIter};
 use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
+use crate::utils::ast_utils::{eq_id, IdentIter};
 use core::ops::{Add, AddAssign};
 use if_chain::if_chain;
 use rustc_ast::ast::*;
@@ -204,7 +204,7 @@ struct BinaryOp {
 }
 
 // TODO make this collect expr pairs in (for example) if expressions, and rename it.
-// Also, include enough info to make a coherent suggestion.
+// Also, include enough info to make a coherent suggestion in those cases.
 fn chained_binops(kind: &ExprKind) -> Option<Vec<BinaryOp>> {
     todo!()
 }
@@ -219,7 +219,7 @@ impl Add for IdentLocation {
 
     fn add(self, other: Self) -> Self::Output {
         Self {
-            index: self.index + other.index,
+            index: self.index + other.index
         }
     }
 }
@@ -244,13 +244,15 @@ impl Add for IdentDifference {
 
     fn add(self, other: Self) -> Self::Output {
         match (self, other) {
-            (Self::NoDifference, output) | (output, Self::NoDifference) => output,
+            (Self::NoDifference, output)|(output, Self::NoDifference) => output,
             (Self::Multiple, _)
             | (_, Self::Multiple)
             | (Self::Single(_, _), Self::Double(_, _))
             | (Self::Double(_, _), Self::Single(_, _))
-            | (Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
-            (Self::NonIdentDifference, _) | (_, Self::NonIdentDifference) => Self::NonIdentDifference,
+            | (Self::Double(_, _), Self::Double(_, _)) => 
+                Self::Multiple,
+            (Self::NonIdentDifference, _)|(_, Self::NonIdentDifference) => 
+                Self::NonIdentDifference,
             (Self::Single(il1, _), Self::Single(il2, _)) => Self::Double(il1, il2),
         }
     }
@@ -372,3 +374,4 @@ fn suggestion_with_swapped_ident(
         )
     })
 }
+
