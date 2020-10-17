@@ -1,5 +1,5 @@
-use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
 use crate::utils::ast_utils::{eq_id, IdentIter};
+use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
 use core::ops::{Add, AddAssign};
 use if_chain::if_chain;
 use rustc_ast::ast::*;
@@ -8,6 +8,7 @@ use rustc_data_structures::fx::FxHashSet;
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass};
 use rustc_session::{declare_lint_pass, declare_tool_lint};
+use rustc_span::source_map::Spanned;
 use rustc_span::symbol::Ident;
 use rustc_span::Span;
 
@@ -196,17 +197,39 @@ fn ident_swap_sugg(
     Some(sugg)
 }
 
-struct BinaryOp {
+struct BinaryOp<'exprs> {
     op: BinOpKind,
     span: Span,
-    left: P<Expr>,
-    right: P<Expr>,
+    left: &'exprs Expr,
+    right: &'exprs Expr,
 }
 
 // TODO make this collect expr pairs in (for example) if expressions, and rename it.
 // Also, include enough info to make a coherent suggestion in those cases.
-fn chained_binops(kind: &ExprKind) -> Option<Vec<BinaryOp>> {
-    todo!()
+fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
+    match kind {
+        ExprKind::Binary(_, left_outer, right_outer) => match (&left_outer.kind, &right_outer.kind) {
+            (
+                ExprKind::Binary(Spanned { node: left_op, .. }, left_left, left_right),
+                ExprKind::Binary(Spanned { node: right_op, .. }, right_left, right_right),
+            ) if left_op == right_op => Some(vec![
+                BinaryOp {
+                    op: *left_op,
+                    left: left_left,
+                    right: left_right,
+                    span: left_outer.span,
+                },
+                BinaryOp {
+                    op: *right_op,
+                    left: right_left,
+                    right: right_right,
+                    span: right_outer.span,
+                },
+            ]),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
@@ -219,7 +242,7 @@ impl Add for IdentLocation {
 
     fn add(self, other: Self) -> Self::Output {
         Self {
-            index: self.index + other.index
+            index: self.index + other.index,
         }
     }
 }
@@ -244,15 +267,13 @@ impl Add for IdentDifference {
 
     fn add(self, other: Self) -> Self::Output {
         match (self, other) {
-            (Self::NoDifference, output)|(output, Self::NoDifference) => output,
+            (Self::NoDifference, output) | (output, Self::NoDifference) => output,
             (Self::Multiple, _)
             | (_, Self::Multiple)
             | (Self::Single(_, _), Self::Double(_, _))
             | (Self::Double(_, _), Self::Single(_, _))
-            | (Self::Double(_, _), Self::Double(_, _)) => 
-                Self::Multiple,
-            (Self::NonIdentDifference, _)|(_, Self::NonIdentDifference) => 
-                Self::NonIdentDifference,
+            | (Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
+            (Self::NonIdentDifference, _) | (_, Self::NonIdentDifference) => Self::NonIdentDifference,
             (Self::Single(il1, _), Self::Single(il2, _)) => Self::Double(il1, il2),
         }
     }
@@ -305,19 +326,29 @@ fn ident_difference_expr_with_base_location(
     // without needing to change the rest of the code.
     let mut difference = IdentDifference::NoDifference;
 
-    for (left_attr, right_attr) in left.attrs.iter().zip(right.attrs.iter()) {
-        let (new_difference, new_base) =
-            ident_difference_via_ident_iter_with_base_location(left_attr, right_attr, base);
+    if false
+    /* fill out and use this branch later */
+    {
+        for (left_attr, right_attr) in left.attrs.iter().zip(right.attrs.iter()) {
+            let (new_difference, new_base) =
+                ident_difference_via_ident_iter_with_base_location(left_attr, right_attr, base);
+            base = new_base;
+            difference += new_difference;
+            if difference.is_complete() {
+                return (difference, base);
+            }
+        }
+
+        match (&left.kind, &right.kind) {
+            _ => todo!(),
+        }
+    } else {
+        let (new_difference, new_base) = ident_difference_via_ident_iter_with_base_location(left, right, base);
         base = new_base;
         difference += new_difference;
-        if difference.is_complete() {
-            return (difference, base);
-        }
     }
 
-    match (&left.kind, &right.kind) {
-        _ => todo!(),
-    }
+    (difference, base)
 }
 
 fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>(
@@ -365,7 +396,7 @@ fn suggestion_with_swapped_ident(
     new_ident: Ident,
     applicability: &mut Applicability,
 ) -> Option<String> {
-    get_ident(expr, location).and_then(|current_ident| {
+    get_ident(expr, location).map(|current_ident| {
         format!(
             "{}{}{}",
             snippet_with_applicability(cx, expr.span.with_hi(current_ident.span.lo()), "..", applicability),
@@ -374,4 +405,3 @@ fn suggestion_with_swapped_ident(
         )
     })
 }
-

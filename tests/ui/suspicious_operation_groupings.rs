@@ -1,4 +1,5 @@
 #![warn(clippy::suspicious_operation_groupings)]
+#![allow(clippy::eq_op)]
 
 struct Vec3 { x: f64, y: f64, z: f64 }
 
