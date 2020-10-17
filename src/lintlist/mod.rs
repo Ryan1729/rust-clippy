@@ -2301,13 +2301,6 @@ vec![
         module: "formatting",
     },
     Lint {
-        name: "suspicious_operation_groupings",
-        group: "correctness",
-        desc: "default lint description",
-        deprecation: None,
-        module: "suspicious_operation_groupings",
-    },
-    Lint {
         name: "suspicious_else_formatting",
         group: "style",
         desc: "suspicious formatting of `else`",
@@ -2327,6 +2320,13 @@ vec![
         desc: "suspicious use of operators in impl of OpAssign trait",
         deprecation: None,
         module: "suspicious_trait_impl",
+    },
+    Lint {
+        name: "suspicious_operation_groupings",
+        group: "correctness",
+        desc: "default lint description",
+        deprecation: None,
+        module: "suspicious_operation_groupings",
     },
     Lint {
         name: "suspicious_unary_op_formatting",
