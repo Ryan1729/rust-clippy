@@ -1053,6 +1053,7 @@ pub fn register_plugins(store: &mut rustc_lint::LintStore, sess: &Session, conf:
     store.register_late_pass(|| box types::UnitArg);
     store.register_late_pass(|| box double_comparison::DoubleComparisons);
     store.register_late_pass(|| box question_mark::QuestionMark);
+    store.register_early_pass(|| box suspicious_operation_groupings::SuspiciousOperationGroupings);
     store.register_late_pass(|| box suspicious_trait_impl::SuspiciousImpl);
     store.register_late_pass(|| box map_unit_fn::MapUnit);
     store.register_late_pass(|| box inherent_impl::MultipleInherentImpl::default());
