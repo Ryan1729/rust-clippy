@@ -363,7 +363,6 @@ fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>
     let mut right_iterator = right.into();
 
     loop {
-        base += IdentLocation { index: 1 };
         match (left_iterator.next(), right_iterator.next()) {
             (Some(left_ident), Some(right_ident)) => {
                 if eq_id(left_ident, right_ident) {
@@ -382,6 +381,7 @@ fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>
                 return (difference, base);
             },
         }
+        base += IdentLocation { index: 1 };
     }
 }
 
