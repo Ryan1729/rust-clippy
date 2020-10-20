@@ -40,7 +40,6 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
         if expr.span.from_expansion() {
             return;
         }
-
         if let Some(binops) = chained_binops(&expr.kind) {
             let binop_count = binops.len();
             if binop_count < 2 {
@@ -61,7 +60,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                         // The `eq_op` lint should catch this if it's an issue.
                         return;
                     },
-                    IdentDifference::Single(ident_loc, ident) => {
+                    IdentDifference::Single(ident_loc) => {
                         one_ident_difference_count += 1;
                         if let Some(previous_expected) = expected_ident_loc {
                             if previous_expected != ident_loc {
@@ -73,7 +72,11 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                             expected_ident_loc = Some(ident_loc);
                         }
 
-                        paired_identifiers.insert(ident);
+                        // If there was only a single difference, all other idents 
+                        // must have been the same, and thus were paired.
+                        for id in IdentIter::from(*left).skip(ident_loc.index) {
+                            paired_identifiers.insert(id);
+                        }
                     },
                     IdentDifference::Double(ident_loc1, ident_loc2) => {
                         double_difference_info = Some((i, ident_loc1, ident_loc2));
@@ -197,6 +200,7 @@ fn ident_swap_sugg(
     Some(sugg)
 }
 
+#[derive(Debug)]
 struct BinaryOp<'exprs> {
     op: BinOpKind,
     span: Span,
@@ -256,7 +260,7 @@ impl AddAssign for IdentLocation {
 #[derive(Clone, Copy, Debug)]
 enum IdentDifference {
     NoDifference,
-    Single(IdentLocation, Ident),
+    Single(IdentLocation),
     Double(IdentLocation, IdentLocation),
     Multiple,
     NonIdentDifference,
@@ -270,11 +274,11 @@ impl Add for IdentDifference {
             (Self::NoDifference, output) | (output, Self::NoDifference) => output,
             (Self::Multiple, _)
             | (_, Self::Multiple)
-            | (Self::Single(_, _), Self::Double(_, _))
-            | (Self::Double(_, _), Self::Single(_, _))
+            | (Self::Single(_), Self::Double(_, _))
+            | (Self::Double(_, _), Self::Single(_))
             | (Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
             (Self::NonIdentDifference, _) | (_, Self::NonIdentDifference) => Self::NonIdentDifference,
-            (Self::Single(il1, _), Self::Single(il2, _)) => Self::Double(il1, il2),
+            (Self::Single(il1), Self::Single(il2)) => Self::Double(il1, il2),
         }
     }
 }
@@ -290,7 +294,7 @@ impl IdentDifference {
     /// of this `IdentDifference`, and false otherwise.
     fn is_complete(&self) -> bool {
         match self {
-            Self::NoDifference | Self::Single(_, _) | Self::Double(_, _) => false,
+            Self::NoDifference | Self::Single(_) | Self::Double(_, _) => false,
             Self::Multiple | Self::NonIdentDifference => true,
         }
     }
@@ -369,7 +373,7 @@ fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>
                     continue;
                 }
 
-                difference += IdentDifference::Single(base, right_ident);
+                difference += IdentDifference::Single(base);
                 if difference.is_complete() {
                     return (difference, base);
                 }
