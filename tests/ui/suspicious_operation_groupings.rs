@@ -1,6 +1,6 @@
 #![warn(clippy::suspicious_operation_groupings)]
 #![allow(clippy::eq_op)]
-
+/* TODO re-enable these
 struct Vec3 { x: f64, y: f64, z: f64 }
 
 impl Eq for Vec3 {}
@@ -11,14 +11,14 @@ impl PartialEq for Vec3 {
         self.x == other.y && self.y == other.y && self.z == other.z
     }
 }
-
+*/
 struct S {
     a: i32,
     b: i32,
     c: i32,
     d: i32,
 }
-
+/* TODO re-enable these
 fn buggy_ab_cmp(s1: &S, s2: &S) -> bool {
     // There's no `s1.b`
     s1.a < s2.a && s1.a < s2.b
@@ -33,9 +33,14 @@ fn non_boolean_operators(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d
 }
-/* TODO re-enable these
-
+*/
 fn odd_number_of_pairs(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.b`
+    s1.a * s2.a + s1.b * s2.c + s1.c * s2.c
+}
+
+/* TODO re-enable these
+fn not_caught_by_eq_op(s1: &S, s2: &S) -> i32 {
     // There's no `s2.b`
     s1.a * s2.a + s1.b * s1.b + s1.c * s2.c
 }
