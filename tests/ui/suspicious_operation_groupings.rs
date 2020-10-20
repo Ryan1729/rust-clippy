@@ -23,7 +23,7 @@ fn buggy_ab_cmp(s1: &S, s2: &S) -> bool {
     // There's no `s1.b`
     s1.a < s2.a && s1.a < s2.b
 }
-
+/* TODO re-enable these
 fn permissable(s1: &S, s2: &S) -> bool {
     // Something like this seems like it might actually be what is desired.
     s1.a == s2.b
@@ -95,5 +95,5 @@ fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
     && n1.inner.1.0 == n2.inner.1.0
     && n1.inner.2.0 == n2.inner.2.0
 }
-
+*/
 fn main() {}

@@ -124,7 +124,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                             SUSPICIOUS_OPERATION_GROUPINGS,
                             binop.span,
                             "This sequence of operators looks suspiciously like a bug.",
-                            "Did you mean",
+                            "I think you meant",
                             sugg,
                             applicability,
                         )
