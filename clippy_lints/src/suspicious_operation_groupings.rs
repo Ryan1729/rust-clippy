@@ -1,4 +1,4 @@
-use crate::utils::ast_utils::{eq_id, IdentIter};
+use crate::utils::ast_utils::{eq_id, is_useless_with_eq_exprs, IdentIter};
 use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
 use core::ops::{Add, AddAssign};
 use if_chain::if_chain;
@@ -53,11 +53,16 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
 
             let mut paired_identifiers = FxHashSet::default();
 
-            for (i, BinaryOp { left, right, .. }) in binops.iter().enumerate() {
+            for (i, BinaryOp { left, right, op, .. }) in binops.iter().enumerate() {
                 match ident_difference_expr(left, right) {
                     IdentDifference::NoDifference => {
-                        // The `eq_op` lint should catch this if it's an issue.
-                        return;
+                        if is_useless_with_eq_exprs(*op) {
+                            // The `eq_op` lint should catch this in this case.
+                            return;
+                        }
+
+                        // TODO emit a lint if we can figure out a pattern in the
+                        // other operations
                     },
                     IdentDifference::Single(ident_loc) => {
                         one_ident_difference_count += 1;

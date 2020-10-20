@@ -1,4 +1,5 @@
 use crate::utils::{
+    ast_utils::is_useless_with_eq_exprs,
     eq_expr_value, higher, implements_trait, in_macro, is_copy, is_expn_of, multispan_sugg, snippet, span_lint,
     span_lint_and_then,
 };
@@ -102,7 +103,7 @@ impl<'tcx> LateLintPass<'tcx> for EqOp {
             if macro_with_not_op(&left.kind) || macro_with_not_op(&right.kind) {
                 return;
             }
-            if is_valid_operator(op) && eq_expr_value(cx, left, right) {
+            if is_useless_with_eq_exprs(higher::binop(op.node)) && eq_expr_value(cx, left, right) {
                 span_lint(
                     cx,
                     EQ_OP,
@@ -244,23 +245,4 @@ impl<'tcx> LateLintPass<'tcx> for EqOp {
             }
         }
     }
-}
-
-fn is_valid_operator(op: BinOp) -> bool {
-    matches!(
-        op.node,
-        BinOpKind::Sub
-            | BinOpKind::Div
-            | BinOpKind::Eq
-            | BinOpKind::Lt
-            | BinOpKind::Le
-            | BinOpKind::Gt
-            | BinOpKind::Ge
-            | BinOpKind::Ne
-            | BinOpKind::And
-            | BinOpKind::Or
-            | BinOpKind::BitXor
-            | BinOpKind::BitAnd
-            | BinOpKind::BitOr
-    )
 }
