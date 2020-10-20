@@ -23,7 +23,7 @@ fn buggy_ab_cmp(s1: &S, s2: &S) -> bool {
     // There's no `s1.b`
     s1.a < s2.a && s1.a < s2.b
 }
-/* TODO re-enable these
+
 fn permissable(s1: &S, s2: &S) -> bool {
     // Something like this seems like it might actually be what is desired.
     s1.a == s2.b
@@ -33,6 +33,7 @@ fn non_boolean_operators(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d
 }
+/* TODO re-enable these
 
 fn odd_number_of_pairs(s1: &S, s2: &S) -> i32 {
     // There's no `s2.b`

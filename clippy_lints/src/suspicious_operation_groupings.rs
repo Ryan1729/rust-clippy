@@ -3,7 +3,6 @@ use crate::utils::{snippet_with_applicability, span_lint_and_sugg};
 use core::ops::{Add, AddAssign};
 use if_chain::if_chain;
 use rustc_ast::ast::*;
-use rustc_ast::ptr::P;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass};
@@ -72,7 +71,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                             expected_ident_loc = Some(ident_loc);
                         }
 
-                        // If there was only a single difference, all other idents 
+                        // If there was only a single difference, all other idents
                         // must have been the same, and thus were paired.
                         for id in IdentIter::from(*left).skip(ident_loc.index) {
                             paired_identifiers.insert(id);
@@ -138,7 +137,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
 fn ident_swap_sugg(
     cx: &EarlyContext<'_>,
     paired_identifiers: &FxHashSet<Ident>,
-    binop: &BinaryOp,
+    binop: &BinaryOp<'_>,
     location: IdentLocation,
     applicability: &mut Applicability,
 ) -> Option<String> {
@@ -212,25 +211,68 @@ struct BinaryOp<'exprs> {
 // Also, include enough info to make a coherent suggestion in those cases.
 fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     match kind {
-        ExprKind::Binary(_, left_outer, right_outer) => match (&left_outer.kind, &right_outer.kind) {
-            (
-                ExprKind::Binary(Spanned { node: left_op, .. }, left_left, left_right),
-                ExprKind::Binary(Spanned { node: right_op, .. }, right_left, right_right),
-            ) if left_op == right_op => Some(vec![
-                BinaryOp {
-                    op: *left_op,
-                    left: left_left,
-                    right: left_right,
-                    span: left_outer.span,
-                },
-                BinaryOp {
+        ExprKind::Binary(_, left_outer, right_outer) => chained_binops_helper(left_outer, right_outer),
+        _ => None,
+    }
+}
+
+fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> Option<Vec<BinaryOp<'expr>>> {
+    match (&left_outer.kind, &right_outer.kind) {
+        (
+            ExprKind::Binary(Spanned { node: left_op, .. }, ref left_left, ref left_right),
+            ExprKind::Binary(Spanned { node: right_op, .. }, ref right_left, ref right_right),
+        ) => match (
+            chained_binops_helper(left_left, left_right),
+            chained_binops_helper(right_left, right_right),
+        ) {
+            (Some(mut left_ops), Some(mut right_ops)) => {
+                left_ops.reserve(right_ops.len());
+                for op in right_ops.drain(..) {
+                    left_ops.push(op);
+                }
+                Some(left_ops)
+            },
+            (Some(mut left_ops), _) => {
+                left_ops.push(BinaryOp {
                     op: *right_op,
                     left: right_left,
                     right: right_right,
                     span: right_outer.span,
-                },
-            ]),
-            _ => None,
+                });
+                Some(left_ops)
+            },
+            (_, Some(mut right_ops)) => {
+                right_ops.insert(
+                    0,
+                    BinaryOp {
+                        op: *left_op,
+                        left: left_left,
+                        right: left_right,
+                        span: left_outer.span,
+                    },
+                );
+                Some(right_ops)
+            },
+            (None, None) => {
+                if left_op == right_op {
+                    Some(vec![
+                        BinaryOp {
+                            op: *left_op,
+                            left: left_left,
+                            right: left_right,
+                            span: left_outer.span,
+                        },
+                        BinaryOp {
+                            op: *right_op,
+                            left: right_left,
+                            right: right_right,
+                            span: right_outer.span,
+                        },
+                    ])
+                } else {
+                    None
+                }
+            },
         },
         _ => None,
     }

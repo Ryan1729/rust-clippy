@@ -7,10 +7,22 @@ LL |         self.x == other.y && self.y == other.y && self.z == other.z
    = note: `-D clippy::suspicious-operation-groupings` implied by `-D warnings`
 
 error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:11:9
+   |
+LL |         self.x == other.y && self.y == other.y && self.z == other.z
+   |         ^^^^^^^^^^^^^^^^^ help: I think you meant: `self.x == other.x`
+
+error: This sequence of operators looks suspiciously like a bug.
   --> $DIR/suspicious_operation_groupings.rs:24:20
    |
 LL |     s1.a < s2.a && s1.a < s2.b
    |                    ^^^^^^^^^^^ help: I think you meant: `s1.b < s2.b`
 
-error: aborting due to 2 previous errors
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:34:33
+   |
+LL |     s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d
+   |                                 ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
+
+error: aborting due to 4 previous errors
 
