@@ -40,7 +40,13 @@ fn odd_number_of_pairs(s1: &S, s2: &S) -> i32 {
 }
 */
 
-fn not_caught_by_eq_op_middle(s1: &S, s2: &S) -> i32 {
+fn not_caught_by_eq_op_middle_change_left(s1: &S, s2: &S) -> i32 {
+    // There's no `s1.b`
+    s1.a * s2.a + s2.b * s2.b + s1.c * s2.c
+}
+
+/* TODO re-enable these
+fn not_caught_by_eq_op_middle_change_right(s1: &S, s2: &S) -> i32 {
     // There's no `s2.b`
     s1.a * s2.a + s1.b * s1.b + s1.c * s2.c
 }
@@ -54,7 +60,7 @@ fn not_caught_by_eq_op_end(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     s1.a * s2.a + s1.b * s2.b + s1.c * s1.c
 }
-/* TODO re-enable these
+
 fn the_cross_product_should_not_lint(s1: &S, s2: &S) -> (i32, i32, i32) {
     (
         s1.b * s2.c - s1.c * s2.b,
