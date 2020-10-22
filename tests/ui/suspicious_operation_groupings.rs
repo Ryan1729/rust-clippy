@@ -76,7 +76,7 @@ fn outer_parens(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     (s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d)
 }
-/* TODO re-enable these
+
 fn inner_parens(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     (s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d)
@@ -106,7 +106,7 @@ fn inside_other_binop_expression(s1: &S, s2: &S) -> i32 {
     // There's no `s1.b`
     (s1.a * s2.a + s2.b * s2.b) / 2
 }
-
+/* TODO re-enable these
 fn inside_larger_boolean_expression(s1: &S, s2: &S) -> bool {
     // There's no `s1.c`
     s1.a > 0 && s1.b > 0 && s1.d == s2.c && s1.d == s2.d
