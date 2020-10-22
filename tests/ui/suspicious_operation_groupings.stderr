@@ -24,5 +24,23 @@ error: This sequence of operators looks suspiciously like a bug.
 LL |     s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d
    |                                 ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
-error: aborting due to 4 previous errors
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:39:19
+   |
+LL |     s1.a * s2.a + s1.b * s2.c + s1.c * s2.c
+   |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
+
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:39:19
+   |
+LL |     s1.a * s2.a + s1.b * s2.c + s1.c * s2.c
+   |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
+
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:44:19
+   |
+LL |     s1.a * s2.a + s2.b * s2.b + s1.c * s2.c
+   |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
+
+error: aborting due to 7 previous errors
 
