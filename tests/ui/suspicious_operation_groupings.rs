@@ -58,7 +58,7 @@ fn not_caught_by_eq_op_end(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     s1.a * s2.a + s1.b * s2.b + s1.c * s1.c
 }
-/* TODO re-enable these
+
 fn the_cross_product_should_not_lint(s1: &S, s2: &S) -> (i32, i32, i32) {
     (
         s1.b * s2.c - s1.c * s2.b,
@@ -67,9 +67,39 @@ fn the_cross_product_should_not_lint(s1: &S, s2: &S) -> (i32, i32, i32) {
     )
 }
 
-fn parens(s1: &S, s2: &S) -> i32 {
+fn outer_parens_simple(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.b`
+    (s1.a * s2.a + s1.b * s1.b)
+}
+
+fn outer_parens(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
-    (s1.a + s2.a) * (s1.b + s2.b) * (s1.c + s2.b) * (s1.d + s2.d)
+    (s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d)
+}
+/* TODO re-enable these
+fn inner_parens(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.c`
+    (s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d)
+}
+
+fn outer_and_some_inner_parens(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.c`
+    ((s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d))
+}
+
+fn all_parens_balanced_tree(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.c`
+    (((s1.a * s2.a) + (s1.b * s2.b)) + ((s1.c * s2.b) + (s1.d * s2.d)))
+}
+
+fn all_parens_left_tree(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.c`
+    (((s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b)) + (s1.d * s2.d))
+}
+
+fn all_parens_right_tree(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.c`
+    ((s1.a * s2.a) + ((s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d)))
 }
 
 fn inside_other_binop_expression(s1: &S, s2: &S) -> i32 {

@@ -60,5 +60,17 @@ error: This sequence of operators looks suspiciously like a bug.
 LL |     s1.a * s2.a + s1.b * s2.b + s1.c * s1.c
    |                                 ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
-error: aborting due to 10 previous errors
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:72:20
+   |
+LL |     (s1.a * s2.a + s1.b * s1.b)
+   |                    ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
+
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:77:34
+   |
+LL |     (s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d)
+   |                                  ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
+
+error: aborting due to 12 previous errors
 

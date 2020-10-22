@@ -301,6 +301,7 @@ struct BinaryOp<'exprs> {
 fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     match kind {
         ExprKind::Binary(_, left_outer, right_outer) => chained_binops_helper(left_outer, right_outer),
+        ExprKind::Paren(ref e) => chained_binops(&e.kind),
         _ => None,
     }
 }
@@ -363,7 +364,9 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
                 }
             },
         },
-        _ => None,
+        _ => {
+            None
+        },
     }
 }
 
