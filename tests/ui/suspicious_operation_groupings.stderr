@@ -42,5 +42,11 @@ error: This sequence of operators looks suspiciously like a bug.
 LL |     s1.a * s2.a + s2.b * s2.b + s1.c * s2.c
    |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
-error: aborting due to 7 previous errors
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:49:19
+   |
+LL |     s1.a * s2.a + s1.b * s1.b + s1.c * s2.c
+   |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
+
+error: aborting due to 8 previous errors
 

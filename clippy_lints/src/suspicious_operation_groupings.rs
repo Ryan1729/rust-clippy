@@ -112,19 +112,18 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                             let old_right_ident = get_ident(binop.right, expected_loc);
 
                             for b in binops.iter().skip(i) {
-                                if let (Some(old_ident), Some(new_ident)) =
-                                    (old_left_ident, get_ident(b.left, expected_loc))
-                                {
-                                    if old_ident == new_ident {
-                                        continue;
-                                    }
+                                if_chain! {
+                                    if let (Some(old_ident), Some(new_ident)) =
+                                    (old_left_ident, get_ident(b.left, expected_loc));
+                                    if old_ident != new_ident;
                                     if let Some(sugg) = suggestion_with_swapped_ident(
                                         cx,
                                         binop.left,
                                         expected_loc,
                                         new_ident,
                                         &mut applicability,
-                                    ) {
+                                    );
+                                    then {
                                         emit_suggestion(
                                             cx,
                                             binop.span,
@@ -135,19 +134,18 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                                     }
                                 }
 
-                                if let (Some(old_ident), Some(new_ident)) =
-                                    (old_right_ident, get_ident(b.right, expected_loc))
-                                {
-                                    if old_ident == new_ident {
-                                        continue;
-                                    }
+                                if_chain! {
+                                    if let (Some(old_ident), Some(new_ident)) =
+                                        (old_right_ident, get_ident(b.right, expected_loc));
+                                    if old_ident != new_ident;
                                     if let Some(sugg) = suggestion_with_swapped_ident(
                                         cx,
                                         binop.right,
                                         expected_loc,
                                         new_ident,
                                         &mut applicability,
-                                    ) {
+                                    );
+                                    then {
                                         emit_suggestion(
                                             cx,
                                             binop.span,

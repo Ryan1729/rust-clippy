@@ -44,12 +44,12 @@ fn not_caught_by_eq_op_middle_change_left(s1: &S, s2: &S) -> i32 {
     s1.a * s2.a + s2.b * s2.b + s1.c * s2.c
 }
 
-/* TODO re-enable these
 fn not_caught_by_eq_op_middle_change_right(s1: &S, s2: &S) -> i32 {
     // There's no `s2.b`
     s1.a * s2.a + s1.b * s1.b + s1.c * s2.c
 }
 
+/* TODO re-enable these
 fn not_caught_by_eq_op_start(s1: &S, s2: &S) -> i32 {
     // There's no `s2.a`
     s1.a * s1.a + s1.b * s2.b + s1.c * s2.c
