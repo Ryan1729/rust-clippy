@@ -1,7 +1,6 @@
 use crate::utils::{
-    ast_utils::is_useless_with_eq_exprs,
-    eq_expr_value, higher, implements_trait, in_macro, is_copy, is_expn_of, multispan_sugg, snippet, span_lint,
-    span_lint_and_then,
+    ast_utils::is_useless_with_eq_exprs, eq_expr_value, higher, implements_trait, in_macro, is_copy, multispan_sugg,
+    snippet, span_lint, span_lint_and_then,
 };
 use if_chain::if_chain;
 use rustc_errors::Applicability;
