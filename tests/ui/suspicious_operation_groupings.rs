@@ -1,7 +1,11 @@
 #![warn(clippy::suspicious_operation_groupings)]
 #![allow(clippy::eq_op)]
 
-struct Vec3 { x: f64, y: f64, z: f64 }
+struct Vec3 {
+    x: f64,
+    y: f64,
+    z: f64,
+}
 
 impl Eq for Vec3 {}
 
@@ -106,12 +110,18 @@ fn inside_other_binop_expression(s1: &S, s2: &S) -> i32 {
     // There's no `s1.b`
     (s1.a * s2.a + s2.b * s2.b) / 2
 }
-/* TODO re-enable these
+
 fn inside_larger_boolean_expression(s1: &S, s2: &S) -> bool {
     // There's no `s1.c`
     s1.a > 0 && s1.b > 0 && s1.d == s2.c && s1.d == s2.d
 }
 
+fn inside_larger_boolean_expression_with_unsorted_ops(s1: &S, s2: &S) -> bool {
+    // There's no `s1.c`
+    s1.a > 0 && s1.d == s2.c && s1.b > 0 && s1.d == s2.d
+}
+
+/* TODO re-enable these
 fn inside_function_call(s1: &S, s2: &S) -> i32 {
     // There's no `s1.b`
     i32::swap_bytes(s1.a * s2.a + s2.b * s2.b)

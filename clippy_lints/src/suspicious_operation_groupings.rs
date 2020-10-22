@@ -41,159 +41,178 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
         }
 
         if let Some(binops) = chained_binops(&expr.kind) {
-            let binop_count = binops.len();
-            if binop_count < 2 {
-                // Single binary operation expressions would likely be false
-                // positives.
-                return;
+            let mut op_types = Vec::with_capacity(binops.len());
+            // We could use a hashmap, etc. to avoid being O(n*m) here, but
+            // we want the lints to be emitted in a consistent order. Besides,
+            // m, (the number of distinct `BinOpKind`s in `binops`)
+            // will often be small, and does hav an upper limit.
+            for b in binops.iter() {
+                if !op_types.contains(&b.op) {
+                    op_types.push(b.op);
+                }
             }
 
-            let mut one_ident_difference_count = 0;
-            let mut no_difference_info = None;
-            let mut double_difference_info = None;
-            let mut expected_ident_loc = None;
+            for op_type in op_types {
+                let ops: Vec<_> = binops.iter().filter(|b| b.op == op_type).collect();
 
-            let mut paired_identifiers = FxHashSet::default();
+                check_same_op_binops(cx, &ops);
+            }
+        }
+    }
+}
 
-            for (i, BinaryOp { left, right, op, .. }) in binops.iter().enumerate() {
-                match ident_difference_expr(left, right) {
-                    IdentDifference::NoDifference => {
-                        if is_useless_with_eq_exprs(*op) {
-                            // The `eq_op` lint should catch this in this case.
-                            return;
-                        }
+fn check_same_op_binops(cx: &EarlyContext<'_>, binops: &[&BinaryOp<'_>]) {
+    let binop_count = binops.len();
+    if binop_count < 2 {
+        // Single binary operation expressions would likely be false
+        // positives.
+        return;
+    }
 
-                        no_difference_info = Some(i);
-                    },
-                    IdentDifference::Single(ident_loc) => {
-                        one_ident_difference_count += 1;
-                        if let Some(previous_expected) = expected_ident_loc {
-                            if previous_expected != ident_loc {
-                                // This expression doesn't match the form we're
-                                // looking for.
+    let mut one_ident_difference_count = 0;
+    let mut no_difference_info = None;
+    let mut double_difference_info = None;
+    let mut expected_ident_loc = None;
+
+    let mut paired_identifiers = FxHashSet::default();
+
+    for (i, BinaryOp { left, right, op, .. }) in binops.iter().enumerate() {
+        match ident_difference_expr(left, right) {
+            IdentDifference::NoDifference => {
+                if is_useless_with_eq_exprs(*op) {
+                    // The `eq_op` lint should catch this in this case.
+                    return;
+                }
+
+                no_difference_info = Some(i);
+            },
+            IdentDifference::Single(ident_loc) => {
+                one_ident_difference_count += 1;
+                if let Some(previous_expected) = expected_ident_loc {
+                    if previous_expected != ident_loc {
+                        // This expression doesn't match the form we're
+                        // looking for.
+                        return;
+                    }
+                } else {
+                    expected_ident_loc = Some(ident_loc);
+                }
+
+                // If there was only a single difference, all other idents
+                // must have been the same, and thus were paired.
+                for id in skip_index(IdentIter::from(*left), ident_loc.index) {
+                    paired_identifiers.insert(id);
+                }
+            },
+            IdentDifference::Double(ident_loc1, ident_loc2) => {
+                double_difference_info = Some((i, ident_loc1, ident_loc2));
+            },
+            IdentDifference::Multiple | IdentDifference::NonIdentDifference => {
+                // It's too hard to know whether this is a bug or not.
+                return;
+            },
+        }
+    }
+
+    let mut applicability = Applicability::MachineApplicable;
+
+    if let Some(expected_loc) = expected_ident_loc {
+        match (no_difference_info, double_difference_info) {
+            (Some(i), None) => {
+                if let Some(binop) = binops.get(i).cloned() {
+                    // We need to try and figure out which identifier we should
+                    // suggest using instead. Since there could be multiple
+                    // replacement candidates in a given expression, and we're
+                    // just taking the first one, we may get some bad lint
+                    // messages.
+                    applicability = Applicability::MaybeIncorrect;
+
+                    // We assume that the correct ident is one used elsewhere in
+                    // the other binops, in a place that there was a single
+                    // difference between idents before.
+                    let old_left_ident = get_ident(binop.left, expected_loc);
+                    let old_right_ident = get_ident(binop.right, expected_loc);
+
+                    for b in skip_index(binops.iter(), i) {
+                        if_chain! {
+                            if let (Some(old_ident), Some(new_ident)) =
+                            (old_left_ident, get_ident(b.left, expected_loc));
+                            if old_ident != new_ident;
+                            if let Some(sugg) = suggestion_with_swapped_ident(
+                                cx,
+                                binop.left,
+                                expected_loc,
+                                new_ident,
+                                &mut applicability,
+                            );
+                            then {
+                                emit_suggestion(
+                                    cx,
+                                    binop.span,
+                                    replace_left_sugg(cx, &binop, sugg, &mut applicability),
+                                    applicability,
+                                );
                                 return;
                             }
-                        } else {
-                            expected_ident_loc = Some(ident_loc);
                         }
 
-                        // If there was only a single difference, all other idents
-                        // must have been the same, and thus were paired.
-                        for id in skip_index(IdentIter::from(*left), ident_loc.index) {
-                            paired_identifiers.insert(id);
-                        }
-                    },
-                    IdentDifference::Double(ident_loc1, ident_loc2) => {
-                        double_difference_info = Some((i, ident_loc1, ident_loc2));
-                    },
-                    IdentDifference::Multiple | IdentDifference::NonIdentDifference => {
-                        // It's too hard to know whether this is a bug or not.
-                        return;
-                    },
-                }
-            }
-
-            let mut applicability = Applicability::MachineApplicable;
-
-            if let Some(expected_loc) = expected_ident_loc {
-                match (no_difference_info, double_difference_info) {
-                    (Some(i), None) => {
-                        if let Some(binop) = binops.get(i).cloned() {
-                            // We need to try and figure out which identifier we should
-                            // suggest using instead. Since there could be multiple
-                            // replacement candidates in a given expression, and we're
-                            // just taking the first one, we may get some bad lint
-                            // messages.
-                            applicability = Applicability::MaybeIncorrect;
-
-                            // We assume that the correct ident is one used elsewhere in
-                            // the other binops, in a place that there was a single
-                            // difference between idents before.
-                            let old_left_ident = get_ident(binop.left, expected_loc);
-                            let old_right_ident = get_ident(binop.right, expected_loc);
-
-                            for b in skip_index(binops.iter(), i) {
-                                if_chain! {
-                                    if let (Some(old_ident), Some(new_ident)) =
-                                    (old_left_ident, get_ident(b.left, expected_loc));
-                                    if old_ident != new_ident;
-                                    if let Some(sugg) = suggestion_with_swapped_ident(
-                                        cx,
-                                        binop.left,
-                                        expected_loc,
-                                        new_ident,
-                                        &mut applicability,
-                                    );
-                                    then {
-                                        emit_suggestion(
-                                            cx,
-                                            binop.span,
-                                            replace_left_sugg(cx, &binop, sugg, &mut applicability),
-                                            applicability,
-                                        );
-                                        return;
-                                    }
-                                }
-
-                                if_chain! {
-                                    if let (Some(old_ident), Some(new_ident)) =
-                                        (old_right_ident, get_ident(b.right, expected_loc));
-                                    if old_ident != new_ident;
-                                    if let Some(sugg) = suggestion_with_swapped_ident(
-                                        cx,
-                                        binop.right,
-                                        expected_loc,
-                                        new_ident,
-                                        &mut applicability,
-                                    );
-                                    then {
-                                        emit_suggestion(
-                                            cx,
-                                            binop.span,
-                                            replace_right_sugg(cx, &binop, sugg, &mut applicability),
-                                            applicability,
-                                        );
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    (None, Some((double_difference_index, ident_loc1, ident_loc2))) => {
                         if_chain! {
-                            if one_ident_difference_count == binop_count - 1;
-                            if let Some(binop) = binops.get(double_difference_index);
+                            if let (Some(old_ident), Some(new_ident)) =
+                                (old_right_ident, get_ident(b.right, expected_loc));
+                            if old_ident != new_ident;
+                            if let Some(sugg) = suggestion_with_swapped_ident(
+                                cx,
+                                binop.right,
+                                expected_loc,
+                                new_ident,
+                                &mut applicability,
+                            );
                             then {
-                                let changed_loc = if ident_loc1 == expected_loc {
-                                    ident_loc2
-                                } else if ident_loc2 == expected_loc {
-                                    ident_loc1
-                                } else {
-                                    // This expression doesn't match the form we're
-                                    // looking for.
-                                    return;
-                                };
-
-                                if let Some(sugg) = ident_swap_sugg(
+                                emit_suggestion(
                                     cx,
-                                    &paired_identifiers,
-                                    binop,
-                                    changed_loc,
-                                    &mut applicability,
-                                ) {
-                                    emit_suggestion(
-                                        cx,
-                                        binop.span,
-                                        sugg,
-                                        applicability,
-                                    );
-                                }
+                                    binop.span,
+                                    replace_right_sugg(cx, &binop, sugg, &mut applicability),
+                                    applicability,
+                                );
+                                return;
                             }
                         }
-                    },
-                    _ => {},
+                    }
                 }
-            }
+            },
+            (None, Some((double_difference_index, ident_loc1, ident_loc2))) => {
+                if_chain! {
+                    if one_ident_difference_count == binop_count - 1;
+                    if let Some(binop) = binops.get(double_difference_index);
+                    then {
+                        let changed_loc = if ident_loc1 == expected_loc {
+                            ident_loc2
+                        } else if ident_loc2 == expected_loc {
+                            ident_loc1
+                        } else {
+                            // This expression doesn't match the form we're
+                            // looking for.
+                            return;
+                        };
+
+                        if let Some(sugg) = ident_swap_sugg(
+                            cx,
+                            &paired_identifiers,
+                            binop,
+                            changed_loc,
+                            &mut applicability,
+                        ) {
+                            emit_suggestion(
+                                cx,
+                                binop.span,
+                                sugg,
+                                applicability,
+                            );
+                        }
+                    }
+                }
+            },
+            _ => {},
         }
     }
 }
@@ -308,18 +327,11 @@ fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
 
 fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> Option<Vec<BinaryOp<'expr>>> {
     match (&left_outer.kind, &right_outer.kind) {
-        (
-            ExprKind::Paren(ref left_paren),
-            ExprKind::Paren(ref right_paren),
-        ) => chained_binops_helper(left_paren, right_paren),
-        (
-            ExprKind::Paren(ref left_paren),
-            _,
-        ) => chained_binops_helper(left_paren, right_outer),
-        (
-            _,
-            ExprKind::Paren(ref right_paren),
-        ) => chained_binops_helper(left_outer, right_paren),
+        (ExprKind::Paren(ref left_paren), ExprKind::Paren(ref right_paren)) => {
+            chained_binops_helper(left_paren, right_paren)
+        },
+        (ExprKind::Paren(ref left_paren), _) => chained_binops_helper(left_paren, right_outer),
+        (_, ExprKind::Paren(ref right_paren)) => chained_binops_helper(left_outer, right_paren),
         (
             ExprKind::Binary(Spanned { node: left_op, .. }, ref left_left, ref left_right),
             ExprKind::Binary(Spanned { node: right_op, .. }, ref right_left, ref right_right),
@@ -376,9 +388,7 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
                 }
             },
         },
-        _ => {
-            None
-        },
+        _ => None,
     }
 }
 
@@ -557,11 +567,9 @@ fn suggestion_with_swapped_ident(
 }
 
 fn skip_index<A, Iter>(iter: Iter, index: usize) -> impl Iterator<Item = A>
-    where Iter: Iterator<Item = A> {
+where
+    Iter: Iterator<Item = A>,
+{
     iter.enumerate()
-        .filter_map(move |(i, a)| if i == index {
-            None
-        } else {
-            Some(a)
-        })
+        .filter_map(move |(i, a)| if i == index { None } else { Some(a) })
 }
