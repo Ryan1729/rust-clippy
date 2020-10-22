@@ -127,7 +127,14 @@ fn inside_larger_boolean_expression_with_unsorted_ops(s1: &S, s2: &S) -> bool {
     s1.a > 0 && s1.d == s2.c && s1.b > 0 && s1.d == s2.d
 }
 
-fn inside_if_statements(s: &mut S) {
+fn inside_an_if_statement(s: &mut S) {
+    // There's no `s1.b`
+    if s1.a < s2.a && s1.a < s2.b {
+        s1.c = s2.c;
+    }
+}
+
+fn across_if_statements(s: &mut S) {
     if s.a > s.c {
         s.a = s.c;
     }
