@@ -53,12 +53,12 @@ fn not_caught_by_eq_op_start(s1: &S, s2: &S) -> i32 {
     // There's no `s2.a`
     s1.a * s1.a + s1.b * s2.b + s1.c * s2.c
 }
-/* TODO re-enable these
+
 fn not_caught_by_eq_op_end(s1: &S, s2: &S) -> i32 {
     // There's no `s2.c`
     s1.a * s2.a + s1.b * s2.b + s1.c * s1.c
 }
-
+/* TODO re-enable these
 fn the_cross_product_should_not_lint(s1: &S, s2: &S) -> (i32, i32, i32) {
     (
         s1.b * s2.c - s1.c * s2.b,

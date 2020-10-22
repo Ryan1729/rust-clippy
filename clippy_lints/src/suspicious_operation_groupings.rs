@@ -39,6 +39,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
         if expr.span.from_expansion() {
             return;
         }
+
         if let Some(binops) = chained_binops(&expr.kind) {
             let binop_count = binops.len();
             if binop_count < 2 {
@@ -78,7 +79,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
 
                         // If there was only a single difference, all other idents
                         // must have been the same, and thus were paired.
-                        for id in IdentIter::from(*left).skip(ident_loc.index) {
+                        for id in skip_index(IdentIter::from(*left), ident_loc.index) {
                             paired_identifiers.insert(id);
                         }
                     },
@@ -111,7 +112,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
                             let old_left_ident = get_ident(binop.left, expected_loc);
                             let old_right_ident = get_ident(binop.right, expected_loc);
 
-                            for b in binops.iter().skip(i) {
+                            for b in skip_index(binops.iter(), i) {
                                 if_chain! {
                                     if let (Some(old_ident), Some(new_ident)) =
                                     (old_left_ident, get_ident(b.left, expected_loc));
@@ -538,4 +539,14 @@ fn suggestion_with_swapped_ident(
             snippet_with_applicability(cx, expr.span.with_lo(current_ident.span.hi()), "..", applicability),
         )
     })
+}
+
+fn skip_index<A, Iter>(iter: Iter, index: usize) -> impl Iterator<Item = A>
+    where Iter: Iterator<Item = A> {
+    iter.enumerate()
+        .filter_map(move |(i, a)| if i == index {
+            None
+        } else {
+            Some(a)
+        })
 }
