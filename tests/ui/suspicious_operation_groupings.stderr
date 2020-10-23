@@ -126,5 +126,11 @@ error: This sequence of operators looks suspiciously like a bug.
 LL |     s1.a > 0 && s1.b > 0 && s1.d == s2.c && s1.d == s2.d
    |                             ^^^^^^^^^^^^ help: I think you meant: `s1.c == s2.c`
 
-error: aborting due to 21 previous errors
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:126:17
+   |
+LL |     s1.a > 0 && s1.d == s2.c && s1.b > 0 && s1.d == s2.d
+   |                 ^^^^^^^^^^^^ help: I think you meant: `s1.c == s2.c`
+
+error: aborting due to 22 previous errors
 

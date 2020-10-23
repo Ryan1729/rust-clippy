@@ -368,24 +368,20 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
                 Some(right_ops)
             },
             (None, None) => {
-                if left_op == right_op {
-                    Some(vec![
-                        BinaryOp {
-                            op: *left_op,
-                            left: left_left,
-                            right: left_right,
-                            span: left_outer.span,
-                        },
-                        BinaryOp {
-                            op: *right_op,
-                            left: right_left,
-                            right: right_right,
-                            span: right_outer.span,
-                        },
-                    ])
-                } else {
-                    None
-                }
+                Some(vec![
+                    BinaryOp {
+                        op: *left_op,
+                        left: left_left,
+                        right: left_right,
+                        span: left_outer.span,
+                    },
+                    BinaryOp {
+                        op: *right_op,
+                        left: right_left,
+                        right: right_right,
+                        span: right_outer.span,
+                    },
+                ])
             },
         },
         _ => None,

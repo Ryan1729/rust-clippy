@@ -121,12 +121,11 @@ fn inside_larger_boolean_expression(s1: &S, s2: &S) -> bool {
     s1.a > 0 && s1.b > 0 && s1.d == s2.c && s1.d == s2.d
 }
 
-/* TODO re-enable these
 fn inside_larger_boolean_expression_with_unsorted_ops(s1: &S, s2: &S) -> bool {
     // There's no `s1.c`
     s1.a > 0 && s1.d == s2.c && s1.b > 0 && s1.d == s2.d
 }
-
+/* TODO re-enable these
 fn inside_an_if_statement(s: &mut S) {
     // There's no `s1.b`
     if s1.a < s2.a && s1.a < s2.b {
