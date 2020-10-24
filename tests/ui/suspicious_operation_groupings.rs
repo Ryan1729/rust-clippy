@@ -32,13 +32,30 @@ struct SAOnly {
 }
 
 impl S {
-    fn a() -> i32 { 0 }
+    fn a(&self) -> i32 { 0 }
 }
 
 fn do_not_give_bad_suggestions_for_this_unusual_expr(s1: &S, s2: &SAOnly) -> bool {
     // This is superficially similar to `buggy_ab_cmp`, but we should not suggest
     // `s2.b` since that is invalid.
     s1.a < s2.a && s1.a() < s1.b
+}
+
+fn do_not_give_bad_suggestions_for_this_macro_expr(s1: &S, s2: &SAOnly) -> bool {
+    macro_rules! s1 {
+        () => {
+            S {
+                a: 1,
+                b: 1,
+                c: 1,
+                d: 1,
+            }
+        }
+    }
+
+    // This is superficially similar to `buggy_ab_cmp`, but we should not suggest
+    // `s2.b` since that is invalid.
+    s1.a < s2.a && s1!().a < s1.b
 }
 
 fn do_not_give_bad_suggestions_for_this_incorrect_expr(s1: &S, s2: &SAOnly) -> bool {
@@ -163,6 +180,15 @@ fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
 }
 
 /* TODO re-enable these
+fn inside_fn_with_similar_expression(s1: &S, s2: &S, strict: bool) -> bool {
+    if strict {
+        s1.a < s2.a && s1.b < s2.b
+    } else {
+        // There's no `s1.b` in this subexpression
+        s1.a <= s2.a && s1.a <= s2.b
+    }
+}
+
 fn inside_an_if_statement(s: &mut S) {
     // There's no `s1.b`
     if s1.a < s2.a && s1.a < s2.b {

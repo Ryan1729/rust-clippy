@@ -19,121 +19,121 @@ LL |     s1.a < s2.a && s1.a < s2.b
    |                    ^^^^^^^^^^^ help: I think you meant: `s1.b < s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:37:33
+  --> $DIR/suspicious_operation_groupings.rs:73:33
    |
 LL |     s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d
    |                                 ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:42:19
+  --> $DIR/suspicious_operation_groupings.rs:78:19
    |
 LL |     s1.a * s2.a + s1.b * s2.c + s1.c * s2.c
    |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:42:19
+  --> $DIR/suspicious_operation_groupings.rs:78:19
    |
 LL |     s1.a * s2.a + s1.b * s2.c + s1.c * s2.c
    |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:47:19
+  --> $DIR/suspicious_operation_groupings.rs:83:19
    |
 LL |     s1.a * s2.a + s2.b * s2.b + s1.c * s2.c
    |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:52:19
+  --> $DIR/suspicious_operation_groupings.rs:88:19
    |
 LL |     s1.a * s2.a + s1.b * s1.b + s1.c * s2.c
    |                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:57:5
+  --> $DIR/suspicious_operation_groupings.rs:93:5
    |
 LL |     s1.a * s1.a + s1.b * s2.b + s1.c * s2.c
    |     ^^^^^^^^^^^ help: I think you meant: `s1.a * s2.a`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:62:33
+  --> $DIR/suspicious_operation_groupings.rs:98:33
    |
 LL |     s1.a * s2.a + s1.b * s2.b + s1.c * s1.c
    |                                 ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:75:20
+  --> $DIR/suspicious_operation_groupings.rs:111:20
    |
 LL |     (s1.a * s2.a + s1.b * s1.b)
    |                    ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:80:34
+  --> $DIR/suspicious_operation_groupings.rs:116:34
    |
 LL |     (s1.a * s2.a + s1.b * s2.b + s1.c * s2.b + s1.d * s2.d)
    |                                  ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:85:38
+  --> $DIR/suspicious_operation_groupings.rs:121:38
    |
 LL |     (s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d)
    |                                      ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:90:39
+  --> $DIR/suspicious_operation_groupings.rs:126:39
    |
 LL |     ((s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d))
    |                                       ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:95:42
+  --> $DIR/suspicious_operation_groupings.rs:131:42
    |
 LL |     (((s1.a * s2.a) + (s1.b * s2.b)) + ((s1.c * s2.b) + (s1.d * s2.d)))
    |                                          ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:95:42
+  --> $DIR/suspicious_operation_groupings.rs:131:42
    |
 LL |     (((s1.a * s2.a) + (s1.b * s2.b)) + ((s1.c * s2.b) + (s1.d * s2.d)))
    |                                          ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:100:40
+  --> $DIR/suspicious_operation_groupings.rs:136:40
    |
 LL |     (((s1.a * s2.a) + (s1.b * s2.b) + (s1.c * s2.b)) + (s1.d * s2.d))
    |                                        ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:105:40
+  --> $DIR/suspicious_operation_groupings.rs:141:40
    |
 LL |     ((s1.a * s2.a) + ((s1.b * s2.b) + (s1.c * s2.b) + (s1.d * s2.d)))
    |                                        ^^^^^^^^^^^ help: I think you meant: `s1.c * s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:110:20
+  --> $DIR/suspicious_operation_groupings.rs:146:20
    |
 LL |     (s1.a * s2.a + s2.b * s2.b) / 2
    |                    ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:115:35
+  --> $DIR/suspicious_operation_groupings.rs:151:35
    |
 LL |     i32::swap_bytes(s1.a * s2.a + s2.b * s2.b)
    |                                   ^^^^^^^^^^^ help: I think you meant: `s1.b * s2.b`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:120:29
+  --> $DIR/suspicious_operation_groupings.rs:156:29
    |
 LL |     s1.a > 0 && s1.b > 0 && s1.d == s2.c && s1.d == s2.d
    |                             ^^^^^^^^^^^^ help: I think you meant: `s1.c == s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:125:17
+  --> $DIR/suspicious_operation_groupings.rs:161:17
    |
 LL |     s1.a > 0 && s1.d == s2.c && s1.b > 0 && s1.d == s2.d
    |                 ^^^^^^^^^^^^ help: I think you meant: `s1.c == s2.c`
 
 error: This sequence of operators looks suspiciously like a bug.
-  --> $DIR/suspicious_operation_groupings.rs:136:8
+  --> $DIR/suspicious_operation_groupings.rs:172:8
    |
 LL |     && n1.inner.2.0 == n2.inner.1.0
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: I think you meant: `n1.inner.2.0 == n2.inner.2.0`

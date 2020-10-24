@@ -35,6 +35,12 @@ declare_clippy_lint! {
 declare_lint_pass!(SuspiciousOperationGroupings => [SUSPICIOUS_OPERATION_GROUPINGS]);
 
 impl EarlyLintPass for SuspiciousOperationGroupings {
+    /*fn check_fn(&mut self, _: &EarlyContext<'_>, kind: rustc_ast::visit::FnKind<'_>, _: Span, _: NodeId) {
+        match kind {
+            rustc_ast::visit::FnKind::Fn(_, ident, _, _, _) => {dbg!(ident);},
+            rustc_ast::visit::FnKind::Closure(_, _) => {dbg!("Closure");},
+        }
+    }*/
     fn check_expr(&mut self, cx: &EarlyContext<'_>, expr: &Expr) {
         if expr.span.from_expansion() {
             return;
@@ -462,7 +468,9 @@ fn ident_difference_expr_with_base_location(
     mut base: IdentLocation,
 ) -> (IdentDifference, IdentLocation) {
     // Ideally, this function should not use IdentIter because it should return
-    // early if the expressions have any non-ident differences.
+    // early if the expressions have any non-ident differences. We want that early
+    // return because if without that restriction the lint would lead to false
+    // positives.
     //
     // But, we cannot (easily?) use a `rustc_ast::visit::Visitor`, since we need
     // the two expressions to be walked in lockstep. And without a `Visitor`, we'd
@@ -480,31 +488,72 @@ fn ident_difference_expr_with_base_location(
     // If it turns out that problematic cases are more prelavent than we assume,
     // then we should be able to change this function to do the correct traversal,
     // without needing to change the rest of the code.
-    //
-    // TODO: write a test that demonstrates the the problem mentioned above.
+
+    use ExprKind::*;
+
+    match (&left.kind, &right.kind) {
+        (Yield(_),Yield(_))
+        |(Try(_),Try(_))
+        |(Paren(_),Paren(_))
+        |(Repeat(_, _),Repeat(_, _))
+        |(Struct(_, _, _),Struct(_, _, _))
+        |(MacCall(_),MacCall(_))
+        |(LlvmInlineAsm(_),LlvmInlineAsm(_))
+        |(InlineAsm(_),InlineAsm(_))
+        |(Ret(_),Ret(_))
+        |(Continue(_),Continue(_))
+        |(Break(_, _),Break(_, _))
+        |(AddrOf(_, _, _),AddrOf(_, _, _))
+        |(Path(_, _),Path(_, _))
+        |(Range(_, _, _),Range(_, _, _))
+        |(Index(_, _),Index(_, _))
+        |(Field(_, _),Field(_, _))
+        |(AssignOp(_, _, _),AssignOp(_, _, _))
+        |(Assign(_, _, _),Assign(_, _, _))
+        |(TryBlock(_),TryBlock(_))
+        |(Await(_),Await(_))
+        |(Async(_, _, _),Async(_, _, _))
+        |(Block(_, _),Block(_, _))
+        |(Closure(_, _, _, _, _, _),Closure(_, _, _, _, _, _))
+        |(Match(_, _),Match(_, _))
+        |(Loop(_, _),Loop(_, _))
+        |(ForLoop(_, _, _, _),ForLoop(_, _, _, _))
+        |(While(_, _, _),While(_, _, _))
+        |(If(_, _, _),If(_, _, _))
+        |(Let(_, _),Let(_, _))
+        |(Type(_, _),Type(_, _))
+        |(Cast(_, _),Cast(_, _))
+        |(Lit(_),Lit(_))
+        |(Unary(_, _),Unary(_, _))
+        |(Binary(_, _, _),Binary(_, _, _))
+        |(Tup(_),Tup(_))
+        |(MethodCall(_, _, _),MethodCall(_, _, _))
+        |(Call(_, _),Call(_, _))
+        |(ConstBlock(_),ConstBlock(_))
+        |(Array(_),Array(_))
+        |(Box(_),Box(_)) => {
+            // keep going
+        }
+        _ => {
+            return (IdentDifference::NonIdentDifference, base);
+        },
+    }
+
     let mut difference = IdentDifference::NoDifference;
 
-    if false
-    /* fill out and use this branch later */
-    {
-        for (left_attr, right_attr) in left.attrs.iter().zip(right.attrs.iter()) {
-            let (new_difference, new_base) =
-                ident_difference_via_ident_iter_with_base_location(left_attr, right_attr, base);
-            base = new_base;
-            difference += new_difference;
-            if difference.is_complete() {
-                return (difference, base);
-            }
-        }
-
-        match (&left.kind, &right.kind) {
-            _ => todo!(),
-        }
-    } else {
-        let (new_difference, new_base) = ident_difference_via_ident_iter_with_base_location(left, right, base);
+    for (left_attr, right_attr) in left.attrs.iter().zip(right.attrs.iter()) {
+        let (new_difference, new_base) =
+            ident_difference_via_ident_iter_with_base_location(left_attr, right_attr, base);
         base = new_base;
         difference += new_difference;
+        if difference.is_complete() {
+            return (difference, base);
+        }
     }
+
+    let (new_difference, new_base) = ident_difference_via_ident_iter_with_base_location(left, right, base);
+    base = new_base;
+    difference += new_difference;
 
     (difference, base)
 }
