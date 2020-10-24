@@ -552,13 +552,18 @@ fn suggestion_with_swapped_ident(
     new_ident: Ident,
     applicability: &mut Applicability,
 ) -> Option<String> {
-    get_ident(expr, location).map(|current_ident| {
-        format!(
+    get_ident(expr, location).and_then(|current_ident| {
+        if eq_id(current_ident, new_ident) {
+            // We never want to suggest a non-change
+            return None;
+        }
+
+        Some(format!(
             "{}{}{}",
             snippet_with_applicability(cx, expr.span.with_hi(current_ident.span.lo()), "..", applicability),
             new_ident.to_string(),
             snippet_with_applicability(cx, expr.span.with_lo(current_ident.span.hi()), "..", applicability),
-        )
+        ))
     })
 }
 
