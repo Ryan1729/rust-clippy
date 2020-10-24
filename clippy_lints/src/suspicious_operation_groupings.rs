@@ -480,6 +480,8 @@ fn ident_difference_expr_with_base_location(
     // If it turns out that problematic cases are more prelavent than we assume,
     // then we should be able to change this function to do the correct traversal,
     // without needing to change the rest of the code.
+    //
+    // TODO: write a test that demonstrates the the problem mentioned above.
     let mut difference = IdentDifference::NoDifference;
 
     if false
@@ -521,13 +523,11 @@ fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>
     loop {
         match (left_iterator.next(), right_iterator.next()) {
             (Some(left_ident), Some(right_ident)) => {
-                if eq_id(left_ident, right_ident) {
-                    continue;
-                }
-
-                difference += IdentDifference::Single(base);
-                if difference.is_complete() {
-                    return (difference, base);
+                if !eq_id(left_ident, right_ident) {
+                    difference += IdentDifference::Single(base);
+                    if difference.is_complete() {
+                        return (difference, base);
+                    }
                 }
             },
             (Some(_), None) | (None, Some(_)) => {

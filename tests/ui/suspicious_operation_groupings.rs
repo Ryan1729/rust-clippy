@@ -1,5 +1,4 @@
 #![warn(clippy::suspicious_operation_groupings)]
-#![allow(clippy::eq_op)]
 
 struct Vec3 {
     x: f64,
@@ -125,6 +124,25 @@ fn inside_larger_boolean_expression_with_unsorted_ops(s1: &S, s2: &S) -> bool {
     // There's no `s1.c`
     s1.a > 0 && s1.d == s2.c && s1.b > 0 && s1.d == s2.d
 }
+
+struct Nested {
+    inner: ((i32,), (i32,), (i32,))
+}
+
+fn changed_middle_ident(n1: &Nested, n2: &Nested) -> bool {
+    // There's no `n2.inner.2.0`
+    n1.inner.0.0 == n2.inner.0.0
+    && n1.inner.1.0 == n2.inner.1.0
+    && n1.inner.2.0 == n2.inner.1.0
+}
+
+fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
+    // There's no `n2.inner.0.0`
+    n1.inner.0.0 == n1.inner.0.0
+    && n1.inner.1.0 == n2.inner.1.0
+    && n1.inner.2.0 == n2.inner.2.0
+}
+
 /* TODO re-enable these
 fn inside_an_if_statement(s: &mut S) {
     // There's no `s1.b`
@@ -146,25 +164,6 @@ fn across_if_statements(s: &mut S) {
     if (s.b < -s.d) {
         s.b = -s.d;
     }
-}
-
-struct Nested {
-    inner: ((i32,), (i32,), (i32,))
-}
-
-fn changed_middle_ident(n1: &Nested, n2: &Nested) -> bool {
-    // There's no `n2.inner.2.0`
-    n1.inner.0.0 == n2.inner.0.0
-    && n1.inner.1.0 == n2.inner.1.0
-    && n1.inner.2.0 == n2.inner.1.0
-}
-
-// This one is already caught by `eq_op`
-fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
-    // There's no `n2.inner.0.0`
-    n1.inner.0.0 == n1.inner.0.0
-    && n1.inner.1.0 == n2.inner.1.0
-    && n1.inner.2.0 == n2.inner.2.0
 }
 */
 fn main() {}
