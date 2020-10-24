@@ -27,6 +27,25 @@ fn buggy_ab_cmp(s1: &S, s2: &S) -> bool {
     s1.a < s2.a && s1.a < s2.b
 }
 
+struct SAOnly {
+    a: i32,
+}
+
+impl S {
+    fn a() -> i32 { 0 }
+}
+
+fn do_not_give_bad_suggestions_for_this_unusual_expr(s1: &S, s2: &SAOnly) -> bool {
+    // This is superficially similar to `buggy_ab_cmp`, but we should not suggest
+    // `s2.b` since that is invalid.
+    s1.a < s2.a && s1.a() < s1.b
+}
+
+fn do_not_give_bad_suggestions_for_this_incorrect_expr(s1: &S, s2: &SAOnly) -> bool {
+    // There's two `s1.b`, but we should not suggest `s2.b` since that is invalid
+    s1.a < s2.a && s1.b < s1.b
+}
+
 fn permissable(s1: &S, s2: &S) -> bool {
     // Something like this seems like it might actually be what is desired.
     s1.a == s2.b
