@@ -172,6 +172,7 @@ fn changed_middle_ident(n1: &Nested, n2: &Nested) -> bool {
     && n1.inner.2.0 == n2.inner.1.0
 }
 
+// `eq_op` should catch this one.
 fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
     // There's no `n2.inner.0.0`
     n1.inner.0.0 == n1.inner.0.0
