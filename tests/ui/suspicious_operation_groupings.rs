@@ -189,14 +189,14 @@ fn inside_fn_with_similar_expression(s1: &S, s2: &S, strict: bool) -> bool {
     }
 }
 
-/* TODO re-enable these
-fn inside_an_if_statement(s: &mut S) {
+fn inside_an_if_statement(s1: &S, s2: &S) {
     // There's no `s1.b`
     if s1.a < s2.a && s1.a < s2.b {
         s1.c = s2.c;
     }
 }
 
+/* TODO re-enable these
 fn across_if_statements(s: &mut S) {
     if s.a > s.c {
         s.a = s.c;
