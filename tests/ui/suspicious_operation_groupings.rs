@@ -180,7 +180,6 @@ fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
     && n1.inner.2.0 == n2.inner.2.0
 }
 
-/* TODO re-enable these
 fn inside_fn_with_similar_expression(s1: &S, s2: &S, strict: bool) -> bool {
     if strict {
         s1.a < s2.a && s1.b < s2.b
@@ -190,6 +189,7 @@ fn inside_fn_with_similar_expression(s1: &S, s2: &S, strict: bool) -> bool {
     }
 }
 
+/* TODO re-enable these
 fn inside_an_if_statement(s: &mut S) {
     // There's no `s1.b`
     if s1.a < s2.a && s1.a < s2.b {
