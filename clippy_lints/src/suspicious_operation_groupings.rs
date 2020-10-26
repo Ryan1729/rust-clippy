@@ -46,7 +46,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
             return;
         }
 
-        if let Some(binops) = chained_binops(&expr.kind) {
+        if let Some(binops) = extract_related_binops(&expr.kind) {
             let mut op_types = Vec::with_capacity(binops.len());
             // We could use a hashmap, etc. to avoid being O(n*m) here, but
             // we want the lints to be emitted in a consistent order. Besides,
@@ -321,8 +321,54 @@ struct BinaryOp<'exprs> {
     right: &'exprs Expr,
 }
 
-// TODO make this collect expr pairs in (for example) if expressions, and rename it.
-// Also, include enough info to make a coherent suggestion in those cases.
+fn extract_related_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
+    append_opt_vecs(chained_binops(kind), if_statment_binops(kind))
+}
+
+fn if_statment_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
+    match kind {
+        ExprKind::If(ref condition, _, _) => {
+            chained_binops(&condition.kind)
+        },
+        ExprKind::Paren(ref e) => if_statment_binops(&e.kind),
+        ExprKind::Block(ref block, _) => {
+            let mut output = None;
+            for stmt in block.stmts.iter() {
+                match stmt.kind {
+                    StmtKind::Expr(ref e)|StmtKind::Semi(ref e) => {
+                        output = append_opt_vecs(
+                            output,
+                            if_statment_binops(&e.kind)
+                        );
+                    },
+                    _ => {}
+                }
+            }
+            output
+        }
+        _ => None,
+    }
+}
+
+fn append_opt_vecs<A>(
+    target_opt: Option<Vec<A>>,
+    source_opt: Option<Vec<A>>
+) -> Option<Vec<A>> {
+    match (target_opt, source_opt) {
+        (Some(mut target), Some(mut source)) => {
+            target.reserve(source.len());
+            for op in source.drain(..) {
+                target.push(op);
+            }
+            Some(target)
+        },
+        (Some(v), None)|(None, Some(v)) => {
+            Some(v)
+        },        
+        (None, None) => None,
+    }
+}
+
 fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     match kind {
         ExprKind::Binary(_, left_outer, right_outer) => chained_binops_helper(left_outer, right_outer),

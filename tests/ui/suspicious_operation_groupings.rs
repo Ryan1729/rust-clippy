@@ -196,6 +196,13 @@ fn inside_an_if_statement(s1: &S, s2: &S) {
     }
 }
 
+fn multiple_comparison_types_and_unary_minus(s: &S) -> bool {
+    s.a > s.c
+    && s.a < -s.c
+    && s.b > s.c // `s.c` should be `s.d` here.
+    && s.b < -s.d
+}
+
 /* TODO re-enable these
 fn across_if_statements(s: &mut S) {
     if s.a > s.c {
@@ -207,7 +214,7 @@ fn across_if_statements(s: &mut S) {
     if s.b > s.c { // `s.c` should be `s.d` here.
         s.b = s.d;
     }
-    if (s.b < -s.d) {
+    if s.b < -s.d {
         s.b = -s.d;
     }
 }
