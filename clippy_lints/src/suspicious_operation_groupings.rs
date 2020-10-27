@@ -372,18 +372,24 @@ fn append_opt_vecs<A>(
 fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     match kind {
         ExprKind::Binary(_, left_outer, right_outer) => chained_binops_helper(left_outer, right_outer),
-        ExprKind::Paren(ref e) => chained_binops(&e.kind),
+        ExprKind::Paren(ref e)
+        | ExprKind::Unary(_, ref e) => chained_binops(&e.kind),
         _ => None,
     }
 }
 
 fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> Option<Vec<BinaryOp<'expr>>> {
     match (&left_outer.kind, &right_outer.kind) {
-        (ExprKind::Paren(ref left_paren), ExprKind::Paren(ref right_paren)) => {
-            chained_binops_helper(left_paren, right_paren)
+        (ExprKind::Paren(ref left_e), ExprKind::Paren(ref right_e))
+        | (ExprKind::Paren(ref left_e), ExprKind::Unary(_, ref right_e))
+        | (ExprKind::Unary(_, ref left_e), ExprKind::Paren(ref right_e))
+        | (ExprKind::Unary(_, ref left_e), ExprKind::Unary(_, ref right_e)) => {
+            chained_binops_helper(left_e, right_e)
         },
-        (ExprKind::Paren(ref left_paren), _) => chained_binops_helper(left_paren, right_outer),
-        (_, ExprKind::Paren(ref right_paren)) => chained_binops_helper(left_outer, right_paren),
+        (ExprKind::Paren(ref left_e), _)
+        | (ExprKind::Unary(_, ref left_e), _) => chained_binops_helper(left_e, right_outer),
+        (_, ExprKind::Paren(ref right_e))
+        | (_, ExprKind::Unary(_, ref right_e)) => chained_binops_helper(left_outer, right_e),
         (
             ExprKind::Binary(Spanned { node: left_op, .. }, ref left_left, ref left_right),
             ExprKind::Binary(Spanned { node: right_op, .. }, ref right_left, ref right_right),

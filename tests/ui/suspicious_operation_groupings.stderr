@@ -150,5 +150,11 @@ error: This sequence of operators looks suspiciously like a bug.
 LL |     if s1.a < s2.a && s1.a < s2.b {
    |                       ^^^^^^^^^^^ help: I think you meant: `s1.b < s2.b`
 
-error: aborting due to 25 previous errors
+error: This sequence of operators looks suspiciously like a bug.
+  --> $DIR/suspicious_operation_groupings.rs:201:48
+   |
+LL |     -(-(-s1.a * -s2.a) + (-(-s1.b * -s2.b) + -(-s1.c * -s2.b) + -(-s1.d * -s2.d)))
+   |                                                ^^^^^^^^^^^^^ help: I think you meant: `-s1.c * -s2.c`
+
+error: aborting due to 26 previous errors
 

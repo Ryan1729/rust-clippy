@@ -196,6 +196,11 @@ fn inside_an_if_statement(s1: &S, s2: &S) {
     }
 }
 
+fn maximum_unary_minus_right_tree(s1: &S, s2: &S) -> i32 {
+    // There's no `s2.c`
+    -(-(-s1.a * -s2.a) + (-(-s1.b * -s2.b) + -(-s1.c * -s2.b) + -(-s1.d * -s2.d)))
+}
+/* TODO re-enable these
 fn multiple_comparison_types_and_unary_minus(s: &S) -> bool {
     s.a > s.c
     && s.a < -s.c
@@ -203,7 +208,6 @@ fn multiple_comparison_types_and_unary_minus(s: &S) -> bool {
     && s.b < -s.d
 }
 
-/* TODO re-enable these
 fn across_if_statements(s: &mut S) {
     if s.a > s.c {
         s.a = s.c;
