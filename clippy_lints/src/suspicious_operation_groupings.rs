@@ -47,6 +47,8 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
         }
 
         if let Some(binops) = extract_related_binops(&expr.kind) {
+            check_binops(cx, &binops.iter().collect::<Vec<_>>());
+
             let mut op_types = Vec::with_capacity(binops.len());
             // We could use a hashmap, etc. to avoid being O(n*m) here, but
             // we want the lints to be emitted in a consistent order. Besides,
@@ -61,13 +63,13 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
             for op_type in op_types {
                 let ops: Vec<_> = binops.iter().filter(|b| b.op == op_type).collect();
 
-                check_same_op_binops(cx, &ops);
+                check_binops(cx, &ops);
             }
         }
     }
 }
 
-fn check_same_op_binops(cx: &EarlyContext<'_>, binops: &[&BinaryOp<'_>]) {
+fn check_binops(cx: &EarlyContext<'_>, binops: &[&BinaryOp<'_>]) {
     let binop_count = binops.len();
     if binop_count < 2 {
         // Single binary operation expressions would likely be false
@@ -321,6 +323,34 @@ struct BinaryOp<'exprs> {
     right: &'exprs Expr,
 }
 
+impl BinaryOp<'exprs> {
+    fn new(
+        op: BinOpKind,
+        span: Span,
+        (left, right): (&'exprs Expr, &'exprs Expr)
+    ) -> Self {
+        Self {
+            op,
+            span,
+            left: strip_non_ident_wrappers(left),
+            right: strip_non_ident_wrappers(right),
+        }
+    }
+}
+
+fn strip_non_ident_wrappers(expr: &Expr) -> &Expr {
+    let mut output = expr;
+    loop {
+        output = match &output.kind {
+            ExprKind::Paren(ref inner)
+            | ExprKind::Unary(_, ref inner) => inner,
+            _ => {
+                return output;
+            }
+        };
+    }
+}
+
 fn extract_related_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     append_opt_vecs(chained_binops(kind), if_statment_binops(kind))
 }
@@ -405,40 +435,36 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
                 Some(left_ops)
             },
             (Some(mut left_ops), _) => {
-                left_ops.push(BinaryOp {
-                    op: *right_op,
-                    left: right_left,
-                    right: right_right,
-                    span: right_outer.span,
-                });
+                left_ops.push(BinaryOp::new(
+                    *right_op,
+                    right_outer.span,
+                    (right_left, right_right),
+                ));
                 Some(left_ops)
             },
             (_, Some(mut right_ops)) => {
                 right_ops.insert(
                     0,
-                    BinaryOp {
-                        op: *left_op,
-                        left: left_left,
-                        right: left_right,
-                        span: left_outer.span,
-                    },
+                    BinaryOp::new(
+                        *left_op,
+                        left_outer.span,
+                        (left_left, left_right),
+                    ),
                 );
                 Some(right_ops)
             },
             (None, None) => {
                 Some(vec![
-                    BinaryOp {
-                        op: *left_op,
-                        left: left_left,
-                        right: left_right,
-                        span: left_outer.span,
-                    },
-                    BinaryOp {
-                        op: *right_op,
-                        left: right_left,
-                        right: right_right,
-                        span: right_outer.span,
-                    },
+                    BinaryOp::new(
+                        *left_op,
+                        left_outer.span,
+                        (left_left, left_right),
+                    ),
+                    BinaryOp::new(
+                        *right_op,
+                        right_outer.span,
+                        (right_left, right_right),
+                    ),
                 ])
             },
         },
@@ -543,7 +569,10 @@ fn ident_difference_expr_with_base_location(
 
     use ExprKind::*;
 
-    match (&left.kind, &right.kind) {
+    match (
+        &strip_non_ident_wrappers(left).kind,
+        &strip_non_ident_wrappers(right).kind
+    ) {
         (Yield(_),Yield(_))
         |(Try(_),Try(_))
         |(Paren(_),Paren(_))
