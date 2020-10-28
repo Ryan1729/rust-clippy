@@ -332,8 +332,8 @@ impl BinaryOp<'exprs> {
         Self {
             op,
             span,
-            left: strip_non_ident_wrappers(left),
-            right: strip_non_ident_wrappers(right),
+            left,
+            right,
         }
     }
 }
