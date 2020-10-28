@@ -324,17 +324,8 @@ struct BinaryOp<'exprs> {
 }
 
 impl BinaryOp<'exprs> {
-    fn new(
-        op: BinOpKind,
-        span: Span,
-        (left, right): (&'exprs Expr, &'exprs Expr)
-    ) -> Self {
-        Self {
-            op,
-            span,
-            left,
-            right,
-        }
+    fn new(op: BinOpKind, span: Span, (left, right): (&'exprs Expr, &'exprs Expr)) -> Self {
+        Self { op, span, left, right }
     }
 }
 
@@ -342,11 +333,10 @@ fn strip_non_ident_wrappers(expr: &Expr) -> &Expr {
     let mut output = expr;
     loop {
         output = match &output.kind {
-            ExprKind::Paren(ref inner)
-            | ExprKind::Unary(_, ref inner) => inner,
+            ExprKind::Paren(ref inner) | ExprKind::Unary(_, ref inner) => inner,
             _ => {
                 return output;
-            }
+            },
         };
     }
 }
@@ -357,33 +347,25 @@ fn extract_related_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>>
 
 fn if_statment_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     match kind {
-        ExprKind::If(ref condition, _, _) => {
-            chained_binops(&condition.kind)
-        },
+        ExprKind::If(ref condition, _, _) => chained_binops(&condition.kind),
         ExprKind::Paren(ref e) => if_statment_binops(&e.kind),
         ExprKind::Block(ref block, _) => {
             let mut output = None;
             for stmt in block.stmts.iter() {
                 match stmt.kind {
-                    StmtKind::Expr(ref e)|StmtKind::Semi(ref e) => {
-                        output = append_opt_vecs(
-                            output,
-                            if_statment_binops(&e.kind)
-                        );
+                    StmtKind::Expr(ref e) | StmtKind::Semi(ref e) => {
+                        output = append_opt_vecs(output, if_statment_binops(&e.kind));
                     },
-                    _ => {}
+                    _ => {},
                 }
             }
             output
-        }
+        },
         _ => None,
     }
 }
 
-fn append_opt_vecs<A>(
-    target_opt: Option<Vec<A>>,
-    source_opt: Option<Vec<A>>
-) -> Option<Vec<A>> {
+fn append_opt_vecs<A>(target_opt: Option<Vec<A>>, source_opt: Option<Vec<A>>) -> Option<Vec<A>> {
     match (target_opt, source_opt) {
         (Some(mut target), Some(mut source)) => {
             target.reserve(source.len());
@@ -392,9 +374,7 @@ fn append_opt_vecs<A>(
             }
             Some(target)
         },
-        (Some(v), None)|(None, Some(v)) => {
-            Some(v)
-        },        
+        (Some(v), None) | (None, Some(v)) => Some(v),
         (None, None) => None,
     }
 }
@@ -402,8 +382,7 @@ fn append_opt_vecs<A>(
 fn chained_binops(kind: &'expr ExprKind) -> Option<Vec<BinaryOp<'expr>>> {
     match kind {
         ExprKind::Binary(_, left_outer, right_outer) => chained_binops_helper(left_outer, right_outer),
-        ExprKind::Paren(ref e)
-        | ExprKind::Unary(_, ref e) => chained_binops(&e.kind),
+        ExprKind::Paren(ref e) | ExprKind::Unary(_, ref e) => chained_binops(&e.kind),
         _ => None,
     }
 }
@@ -413,13 +392,13 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
         (ExprKind::Paren(ref left_e), ExprKind::Paren(ref right_e))
         | (ExprKind::Paren(ref left_e), ExprKind::Unary(_, ref right_e))
         | (ExprKind::Unary(_, ref left_e), ExprKind::Paren(ref right_e))
-        | (ExprKind::Unary(_, ref left_e), ExprKind::Unary(_, ref right_e)) => {
-            chained_binops_helper(left_e, right_e)
+        | (ExprKind::Unary(_, ref left_e), ExprKind::Unary(_, ref right_e)) => chained_binops_helper(left_e, right_e),
+        (ExprKind::Paren(ref left_e), _) | (ExprKind::Unary(_, ref left_e), _) => {
+            chained_binops_helper(left_e, right_outer)
         },
-        (ExprKind::Paren(ref left_e), _)
-        | (ExprKind::Unary(_, ref left_e), _) => chained_binops_helper(left_e, right_outer),
-        (_, ExprKind::Paren(ref right_e))
-        | (_, ExprKind::Unary(_, ref right_e)) => chained_binops_helper(left_outer, right_e),
+        (_, ExprKind::Paren(ref right_e)) | (_, ExprKind::Unary(_, ref right_e)) => {
+            chained_binops_helper(left_outer, right_e)
+        },
         (
             ExprKind::Binary(Spanned { node: left_op, .. }, ref left_left, ref left_right),
             ExprKind::Binary(Spanned { node: right_op, .. }, ref right_left, ref right_right),
@@ -435,38 +414,17 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
                 Some(left_ops)
             },
             (Some(mut left_ops), _) => {
-                left_ops.push(BinaryOp::new(
-                    *right_op,
-                    right_outer.span,
-                    (right_left, right_right),
-                ));
+                left_ops.push(BinaryOp::new(*right_op, right_outer.span, (right_left, right_right)));
                 Some(left_ops)
             },
             (_, Some(mut right_ops)) => {
-                right_ops.insert(
-                    0,
-                    BinaryOp::new(
-                        *left_op,
-                        left_outer.span,
-                        (left_left, left_right),
-                    ),
-                );
+                right_ops.insert(0, BinaryOp::new(*left_op, left_outer.span, (left_left, left_right)));
                 Some(right_ops)
             },
-            (None, None) => {
-                Some(vec![
-                    BinaryOp::new(
-                        *left_op,
-                        left_outer.span,
-                        (left_left, left_right),
-                    ),
-                    BinaryOp::new(
-                        *right_op,
-                        right_outer.span,
-                        (right_left, right_right),
-                    ),
-                ])
-            },
+            (None, None) => Some(vec![
+                BinaryOp::new(*left_op, left_outer.span, (left_left, left_right)),
+                BinaryOp::new(*right_op, right_outer.span, (right_left, right_right)),
+            ]),
         },
         _ => None,
     }
@@ -571,50 +529,50 @@ fn ident_difference_expr_with_base_location(
 
     match (
         &strip_non_ident_wrappers(left).kind,
-        &strip_non_ident_wrappers(right).kind
+        &strip_non_ident_wrappers(right).kind,
     ) {
-        (Yield(_),Yield(_))
-        |(Try(_),Try(_))
-        |(Paren(_),Paren(_))
-        |(Repeat(_, _),Repeat(_, _))
-        |(Struct(_, _, _),Struct(_, _, _))
-        |(MacCall(_),MacCall(_))
-        |(LlvmInlineAsm(_),LlvmInlineAsm(_))
-        |(InlineAsm(_),InlineAsm(_))
-        |(Ret(_),Ret(_))
-        |(Continue(_),Continue(_))
-        |(Break(_, _),Break(_, _))
-        |(AddrOf(_, _, _),AddrOf(_, _, _))
-        |(Path(_, _),Path(_, _))
-        |(Range(_, _, _),Range(_, _, _))
-        |(Index(_, _),Index(_, _))
-        |(Field(_, _),Field(_, _))
-        |(AssignOp(_, _, _),AssignOp(_, _, _))
-        |(Assign(_, _, _),Assign(_, _, _))
-        |(TryBlock(_),TryBlock(_))
-        |(Await(_),Await(_))
-        |(Async(_, _, _),Async(_, _, _))
-        |(Block(_, _),Block(_, _))
-        |(Closure(_, _, _, _, _, _),Closure(_, _, _, _, _, _))
-        |(Match(_, _),Match(_, _))
-        |(Loop(_, _),Loop(_, _))
-        |(ForLoop(_, _, _, _),ForLoop(_, _, _, _))
-        |(While(_, _, _),While(_, _, _))
-        |(If(_, _, _),If(_, _, _))
-        |(Let(_, _),Let(_, _))
-        |(Type(_, _),Type(_, _))
-        |(Cast(_, _),Cast(_, _))
-        |(Lit(_),Lit(_))
-        |(Unary(_, _),Unary(_, _))
-        |(Binary(_, _, _),Binary(_, _, _))
-        |(Tup(_),Tup(_))
-        |(MethodCall(_, _, _),MethodCall(_, _, _))
-        |(Call(_, _),Call(_, _))
-        |(ConstBlock(_),ConstBlock(_))
-        |(Array(_),Array(_))
-        |(Box(_),Box(_)) => {
+        (Yield(_), Yield(_))
+        | (Try(_), Try(_))
+        | (Paren(_), Paren(_))
+        | (Repeat(_, _), Repeat(_, _))
+        | (Struct(_, _, _), Struct(_, _, _))
+        | (MacCall(_), MacCall(_))
+        | (LlvmInlineAsm(_), LlvmInlineAsm(_))
+        | (InlineAsm(_), InlineAsm(_))
+        | (Ret(_), Ret(_))
+        | (Continue(_), Continue(_))
+        | (Break(_, _), Break(_, _))
+        | (AddrOf(_, _, _), AddrOf(_, _, _))
+        | (Path(_, _), Path(_, _))
+        | (Range(_, _, _), Range(_, _, _))
+        | (Index(_, _), Index(_, _))
+        | (Field(_, _), Field(_, _))
+        | (AssignOp(_, _, _), AssignOp(_, _, _))
+        | (Assign(_, _, _), Assign(_, _, _))
+        | (TryBlock(_), TryBlock(_))
+        | (Await(_), Await(_))
+        | (Async(_, _, _), Async(_, _, _))
+        | (Block(_, _), Block(_, _))
+        | (Closure(_, _, _, _, _, _), Closure(_, _, _, _, _, _))
+        | (Match(_, _), Match(_, _))
+        | (Loop(_, _), Loop(_, _))
+        | (ForLoop(_, _, _, _), ForLoop(_, _, _, _))
+        | (While(_, _, _), While(_, _, _))
+        | (If(_, _, _), If(_, _, _))
+        | (Let(_, _), Let(_, _))
+        | (Type(_, _), Type(_, _))
+        | (Cast(_, _), Cast(_, _))
+        | (Lit(_), Lit(_))
+        | (Unary(_, _), Unary(_, _))
+        | (Binary(_, _, _), Binary(_, _, _))
+        | (Tup(_), Tup(_))
+        | (MethodCall(_, _, _), MethodCall(_, _, _))
+        | (Call(_, _), Call(_, _))
+        | (ConstBlock(_), ConstBlock(_))
+        | (Array(_), Array(_))
+        | (Box(_), Box(_)) => {
             // keep going
-        }
+        },
         _ => {
             return (IdentDifference::NonIdentDifference, base);
         },
