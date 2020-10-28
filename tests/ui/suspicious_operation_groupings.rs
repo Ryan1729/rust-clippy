@@ -210,39 +210,4 @@ fn unary_minus_and_an_if_expression(s1: &S, s2: &S) -> i32 {
     })
 }
 
-/* TODO re-enable these
-fn multiple_comparison_types_and_unary_minus(s: &S) -> bool {
-    s.a > s.c
-    && s.a < -s.c
-    && s.b > s.c // `s.c` should be `s.d` here.
-    && s.b < -s.d
-}
-
-fn across_if_statements(s: &mut S) {
-    if s.a > s.c {
-        s.a = s.c;
-    }
-    if s.a < -s.c {
-        s.a = -s.c;
-    }
-    if s.b > s.c { // `s.c` should be `s.d` here.
-        s.b = s.d;
-    }
-    if s.b < -s.d {
-        s.b = -s.d;
-    }
-}
-
-fn across_if_expressions_with_a_leading_unary_minus(s: &mut S) {
-    -(if s.a > s.c {
-        s.a
-    } else if s.a < -s.c {
-        -s.c
-    } else if s.b > s.c { // `s.c` should be `s.d` here.
-        s.b
-    } else if s.b < -s.d {
-        -s.d
-    })
-}
-*/
 fn main() {}
