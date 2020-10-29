@@ -2324,7 +2324,7 @@ vec![
     Lint {
         name: "suspicious_operation_groupings",
         group: "correctness",
-        desc: "default lint description",
+        desc: "groupings of binary operators that look suspiciously like typos",
         deprecation: None,
         module: "suspicious_operation_groupings",
     },
