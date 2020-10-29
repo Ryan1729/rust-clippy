@@ -13,34 +13,53 @@ use rustc_span::Span;
 
 declare_clippy_lint! {
     /// **What it does:**
-    ///
+    /// Checks for unlikely usages of binary operators that are almost
+    /// certainly typos and/or copy/paste errors, given the other usages
+    /// of binary operators nearby.
     /// **Why is this bad?**
-    ///
-    /// **Known problems:** None.
+    /// They are probably bugs and if they aren't then they look like bugs
+    /// and you should add a comment explaining why you are doing such an
+    /// odd set of operations.
+    /// **Known problems:**
+    /// There may be some false positives if you are trying to do something
+    /// unusual that happens to look like a typo.
     ///
     /// **Example:**
     ///
     /// ```rust
-    /// // example code where clippy issues a warning
+    /// struct Vec3 {
+    ///    x: f64,
+    ///    y: f64,
+    ///    z: f64,
+    ///}
+    ///
+    ///impl Eq for Vec3 {}
+    ///
+    ///impl PartialEq for Vec3 {
+    ///    fn eq(&self, other: &Self) -> bool {
+    ///        // This should trigger the lint because `self.x` is compared to `other.y`
+    ///        self.x == other.y && self.y == other.y && self.z == other.z
+    ///    }
+    ///}
     /// ```
     /// Use instead:
     /// ```rust
-    /// // example code which does not raise clippy warning
+    /// // same as above except:
+    /// impl PartialEq for Vec3 {
+    ///     fn eq(&self, other: &Self) -> bool {
+    ///         // Note we now compare other.x to self.x
+    ///         self.x == other.x && self.y == other.y && self.z == other.z
+    ///     }
+    /// }
     /// ```
     pub SUSPICIOUS_OPERATION_GROUPINGS,
     correctness,
-    "default lint description"
+    "groupings of binary operators that look suspiciously like typos"
 }
 
 declare_lint_pass!(SuspiciousOperationGroupings => [SUSPICIOUS_OPERATION_GROUPINGS]);
 
 impl EarlyLintPass for SuspiciousOperationGroupings {
-    /*fn check_fn(&mut self, _: &EarlyContext<'_>, kind: rustc_ast::visit::FnKind<'_>, _: Span, _: NodeId) {
-        match kind {
-            rustc_ast::visit::FnKind::Fn(_, ident, _, _, _) => {dbg!(ident);},
-            rustc_ast::visit::FnKind::Closure(_, _) => {dbg!("Closure");},
-        }
-    }*/
     fn check_expr(&mut self, cx: &EarlyContext<'_>, expr: &Expr) {
         if expr.span.from_expansion() {
             return;
