@@ -474,7 +474,7 @@ enum IdentDifference {
     Single(IdentLocation),
     Double(IdentLocation, IdentLocation),
     Multiple,
-    NonIdentDifference,
+    NonIdent,
 }
 
 impl Add for IdentDifference {
@@ -487,7 +487,7 @@ impl Add for IdentDifference {
             | (_, Self::Multiple)
             | (Self::Double(_, _), Self::Single(_))
             | (Self::Single(_) | Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
-            (Self::NonIdentDifference, _) | (_, Self::NonIdentDifference) => Self::NonIdentDifference,
+            (Self::NonIdent, _) | (_, Self::NonIdent) => Self::NonIdent,
             (Self::Single(il1), Self::Single(il2)) => Self::Double(il1, il2),
         }
     }
@@ -505,7 +505,7 @@ impl IdentDifference {
     fn is_complete(&self) -> bool {
         match self {
             Self::NoDifference | Self::Single(_) | Self::Double(_, _) => false,
-            Self::Multiple | Self::NonIdentDifference => true,
+            Self::Multiple | Self::NonIdent => true,
         }
     }
 }
