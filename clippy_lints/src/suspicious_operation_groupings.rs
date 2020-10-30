@@ -134,7 +134,7 @@ fn check_binops(cx: &EarlyContext<'_>, binops: &[&BinaryOp<'_>]) {
             IdentDifference::Double(ident_loc1, ident_loc2) => {
                 double_difference_info = Some((i, ident_loc1, ident_loc2));
             },
-            IdentDifference::Multiple | IdentDifference::NonIdentDifference => {
+            IdentDifference::Multiple | IdentDifference::NonIdent => {
                 // It's too hard to know whether this is a bug or not.
                 return;
             },
@@ -412,10 +412,8 @@ fn chained_binops_helper(left_outer: &'expr Expr, right_outer: &'expr Expr) -> O
         | (ExprKind::Paren(ref left_e), ExprKind::Unary(_, ref right_e))
         | (ExprKind::Unary(_, ref left_e), ExprKind::Paren(ref right_e))
         | (ExprKind::Unary(_, ref left_e), ExprKind::Unary(_, ref right_e)) => chained_binops_helper(left_e, right_e),
-        (ExprKind::Paren(ref left_e), _) | (ExprKind::Unary(_, ref left_e), _) => {
-            chained_binops_helper(left_e, right_outer)
-        },
-        (_, ExprKind::Paren(ref right_e)) | (_, ExprKind::Unary(_, ref right_e)) => {
+        (ExprKind::Paren(ref left_e) | ExprKind::Unary(_, ref left_e), _) => chained_binops_helper(left_e, right_outer),
+        (_, ExprKind::Paren(ref right_e) | ExprKind::Unary(_, ref right_e)) => {
             chained_binops_helper(left_outer, right_e)
         },
         (
@@ -487,9 +485,8 @@ impl Add for IdentDifference {
             (Self::NoDifference, output) | (output, Self::NoDifference) => output,
             (Self::Multiple, _)
             | (_, Self::Multiple)
-            | (Self::Single(_), Self::Double(_, _))
             | (Self::Double(_, _), Self::Single(_))
-            | (Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
+            | (Self::Single(_) | Self::Double(_, _), Self::Double(_, _)) => Self::Multiple,
             (Self::NonIdentDifference, _) | (_, Self::NonIdentDifference) => Self::NonIdentDifference,
             (Self::Single(il1), Self::Single(il2)) => Self::Double(il1, il2),
         }
@@ -593,7 +590,7 @@ fn ident_difference_expr_with_base_location(
             // keep going
         },
         _ => {
-            return (IdentDifference::NonIdentDifference, base);
+            return (IdentDifference::NonIdent, base);
         },
     }
 
@@ -638,7 +635,7 @@ fn ident_difference_via_ident_iter_with_base_location<Iterable: Into<IdentIter>>
                 }
             },
             (Some(_), None) | (None, Some(_)) => {
-                return (IdentDifference::NonIdentDifference, base);
+                return (IdentDifference::NonIdent, base);
             },
             (None, None) => {
                 return (difference, base);
