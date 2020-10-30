@@ -44,11 +44,11 @@ declare_clippy_lint! {
     /// ```
     /// Use instead:
     /// ```rust
-    /// #struct Vec3 {
-    /// #    x: f64,
-    /// #    y: f64,
-    /// #    z: f64,
-    /// #}
+    /// # struct Vec3 {
+    /// #     x: f64,
+    /// #     y: f64,
+    /// #     z: f64,
+    /// # }
     /// // same as above except:
     /// impl PartialEq for Vec3 {
     ///     fn eq(&self, other: &Self) -> bool {
