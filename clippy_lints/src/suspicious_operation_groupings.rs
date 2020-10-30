@@ -28,22 +28,27 @@ declare_clippy_lint! {
     ///
     /// ```rust
     /// struct Vec3 {
-    ///    x: f64,
-    ///    y: f64,
-    ///    z: f64,
-    ///}
+    ///     x: f64,
+    ///     y: f64,
+    ///     z: f64,
+    /// }
     ///
-    ///impl Eq for Vec3 {}
+    /// impl Eq for Vec3 {}
     ///
-    ///impl PartialEq for Vec3 {
-    ///    fn eq(&self, other: &Self) -> bool {
-    ///        // This should trigger the lint because `self.x` is compared to `other.y`
-    ///        self.x == other.y && self.y == other.y && self.z == other.z
-    ///    }
-    ///}
+    /// impl PartialEq for Vec3 {
+    ///     fn eq(&self, other: &Self) -> bool {
+    ///         // This should trigger the lint because `self.x` is compared to `other.y`
+    ///         self.x == other.y && self.y == other.y && self.z == other.z
+    ///     }
+    /// }
     /// ```
     /// Use instead:
     /// ```rust
+    /// #struct Vec3 {
+    /// #    x: f64,
+    /// #    y: f64,
+    /// #    z: f64,
+    /// #}
     /// // same as above except:
     /// impl PartialEq for Vec3 {
     ///     fn eq(&self, other: &Self) -> bool {
