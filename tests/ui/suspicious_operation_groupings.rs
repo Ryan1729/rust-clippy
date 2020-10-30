@@ -32,7 +32,9 @@ struct SAOnly {
 }
 
 impl S {
-    fn a(&self) -> i32 { 0 }
+    fn a(&self) -> i32 {
+        0
+    }
 }
 
 fn do_not_give_bad_suggestions_for_this_unusual_expr(s1: &S, s2: &SAOnly) -> bool {
@@ -50,7 +52,7 @@ fn do_not_give_bad_suggestions_for_this_macro_expr(s1: &S, s2: &SAOnly) -> bool 
                 c: 1,
                 d: 1,
             }
-        }
+        };
     }
 
     // This is superficially similar to `buggy_ab_cmp`, but we should not suggest
@@ -162,22 +164,18 @@ fn inside_larger_boolean_expression_with_unsorted_ops(s1: &S, s2: &S) -> bool {
 }
 
 struct Nested {
-    inner: ((i32,), (i32,), (i32,))
+    inner: ((i32,), (i32,), (i32,)),
 }
 
 fn changed_middle_ident(n1: &Nested, n2: &Nested) -> bool {
     // There's no `n2.inner.2.0`
-    n1.inner.0.0 == n2.inner.0.0
-    && n1.inner.1.0 == n2.inner.1.0
-    && n1.inner.2.0 == n2.inner.1.0
+    (n1.inner.0).0 == (n2.inner.0).0 && (n1.inner.1).0 == (n2.inner.1).0 && (n1.inner.2).0 == (n2.inner.1).0
 }
 
 // `eq_op` should catch this one.
 fn changed_initial_ident(n1: &Nested, n2: &Nested) -> bool {
     // There's no `n2.inner.0.0`
-    n1.inner.0.0 == n1.inner.0.0
-    && n1.inner.1.0 == n2.inner.1.0
-    && n1.inner.2.0 == n2.inner.2.0
+    (n1.inner.0).0 == (n1.inner.0).0 && (n1.inner.1).0 == (n2.inner.1).0 && (n1.inner.2).0 == (n2.inner.2).0
 }
 
 fn inside_fn_with_similar_expression(s1: &S, s2: &S, strict: bool) -> bool {
@@ -203,11 +201,7 @@ fn maximum_unary_minus_right_tree(s1: &S, s2: &S) -> i32 {
 
 fn unary_minus_and_an_if_expression(s1: &S, s2: &S) -> i32 {
     // There's no `s1.b`
-    -(if -s1.a < -s2.a && -s1.a < -s2.b {
-        s1.c
-    } else {
-        s2.a
-    })
+    -(if -s1.a < -s2.a && -s1.a < -s2.b { s1.c } else { s2.a })
 }
 
 fn main() {}

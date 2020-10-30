@@ -88,12 +88,10 @@ fn check_ignore_macro() {
 }
 
 struct Nested {
-    inner: ((i32,), (i32,), (i32,))
+    inner: ((i32,), (i32,), (i32,)),
 }
 
 fn check_nested(n1: &Nested, n2: &Nested) -> bool {
     // There's no `n2.inner.0.0`
-    n1.inner.0.0 == n1.inner.0.0
-    && n1.inner.1.0 == n2.inner.1.0
-    && n1.inner.2.0 == n2.inner.2.0
+    (n1.inner.0).0 == (n1.inner.0).0 && (n1.inner.1).0 == (n2.inner.1).0 && (n1.inner.2).0 == (n2.inner.2).0
 }
