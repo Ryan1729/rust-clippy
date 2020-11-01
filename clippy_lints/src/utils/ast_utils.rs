@@ -14,21 +14,10 @@ pub mod ident_iter;
 pub use ident_iter::IdentIter;
 
 pub fn is_useless_with_eq_exprs(kind: BinOpKind) -> bool {
+    use BinOpKind::*;
     matches!(
         kind,
-        BinOpKind::Sub
-            | BinOpKind::Div
-            | BinOpKind::Eq
-            | BinOpKind::Lt
-            | BinOpKind::Le
-            | BinOpKind::Gt
-            | BinOpKind::Ge
-            | BinOpKind::Ne
-            | BinOpKind::And
-            | BinOpKind::Or
-            | BinOpKind::BitXor
-            | BinOpKind::BitAnd
-            | BinOpKind::BitOr
+        Sub | Div | Eq | Lt | Le | Gt | Ge | Ne | And | Or | BitXor | BitAnd | BitOr
     )
 }
 
