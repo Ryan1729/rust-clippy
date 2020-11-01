@@ -92,6 +92,6 @@ struct Nested {
 }
 
 fn check_nested(n1: &Nested, n2: &Nested) -> bool {
-    // There's no `n2.inner.0.0`
+    // `n2.inner.0.0` mistyped as `n1.inner.0.0`
     (n1.inner.0).0 == (n1.inner.0).0 && (n1.inner.1).0 == (n2.inner.1).0 && (n1.inner.2).0 == (n2.inner.2).0
 }
