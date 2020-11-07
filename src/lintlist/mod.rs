@@ -2323,8 +2323,8 @@ vec![
     },
     Lint {
         name: "suspicious_operation_groupings",
-        group: "correctness",
-        desc: "groupings of binary operators that look suspiciously like typos",
+        group: "style",
+        desc: "groupings of binary operations that look suspiciously like typos",
         deprecation: None,
         module: "suspicious_operation_groupings",
     },
