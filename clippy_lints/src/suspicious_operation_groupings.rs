@@ -58,7 +58,7 @@ declare_clippy_lint! {
     /// }
     /// ```
     pub SUSPICIOUS_OPERATION_GROUPINGS,
-    correctness,
+    style,
     "groupings of binary operations that look suspiciously like typos"
 }
 
