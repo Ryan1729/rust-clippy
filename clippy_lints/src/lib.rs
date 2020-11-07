@@ -307,7 +307,7 @@ mod single_component_path_imports;
 mod slow_vector_initialization;
 mod stable_sort_primitive;
 mod strings;
-mod suspicious_chained_operators;
+mod suspicious_operation_groupings;
 mod suspicious_trait_impl;
 mod swap;
 mod tabs_in_doc_comments;
@@ -835,7 +835,7 @@ pub fn register_plugins(store: &mut rustc_lint::LintStore, sess: &Session, conf:
         &strings::STRING_ADD_ASSIGN,
         &strings::STRING_FROM_UTF8_AS_BYTES,
         &strings::STRING_LIT_AS_BYTES,
-        &suspicious_chained_operators::SUSPICIOUS_CHAINED_OPERATORS,
+        &suspicious_operation_groupings::SUSPICIOUS_OPERATION_GROUPINGS,
         &suspicious_trait_impl::SUSPICIOUS_ARITHMETIC_IMPL,
         &suspicious_trait_impl::SUSPICIOUS_OP_ASSIGN_IMPL,
         &swap::ALMOST_SWAPPED,
@@ -1531,7 +1531,7 @@ pub fn register_plugins(store: &mut rustc_lint::LintStore, sess: &Session, conf:
         LintId::of(&slow_vector_initialization::SLOW_VECTOR_INITIALIZATION),
         LintId::of(&stable_sort_primitive::STABLE_SORT_PRIMITIVE),
         LintId::of(&strings::STRING_FROM_UTF8_AS_BYTES),
-        LintId::of(&suspicious_chained_operators::SUSPICIOUS_CHAINED_OPERATORS),
+        LintId::of(&suspicious_operation_groupings::SUSPICIOUS_OPERATION_GROUPINGS),
         LintId::of(&suspicious_trait_impl::SUSPICIOUS_ARITHMETIC_IMPL),
         LintId::of(&suspicious_trait_impl::SUSPICIOUS_OP_ASSIGN_IMPL),
         LintId::of(&swap::ALMOST_SWAPPED),
@@ -1836,7 +1836,7 @@ pub fn register_plugins(store: &mut rustc_lint::LintStore, sess: &Session, conf:
         LintId::of(&regex::INVALID_REGEX),
         LintId::of(&self_assignment::SELF_ASSIGNMENT),
         LintId::of(&serde_api::SERDE_API_MISUSE),
-        LintId::of(&suspicious_chained_operators::SUSPICIOUS_CHAINED_OPERATORS),
+        LintId::of(&suspicious_operation_groupings::SUSPICIOUS_OPERATION_GROUPINGS),
         LintId::of(&suspicious_trait_impl::SUSPICIOUS_ARITHMETIC_IMPL),
         LintId::of(&suspicious_trait_impl::SUSPICIOUS_OP_ASSIGN_IMPL),
         LintId::of(&swap::ALMOST_SWAPPED),

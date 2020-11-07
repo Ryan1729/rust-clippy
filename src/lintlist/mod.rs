@@ -2301,11 +2301,11 @@ vec![
         module: "formatting",
     },
     Lint {
-        name: "suspicious_chained_operators",
+        name: "suspicious_operation_groupings",
         group: "correctness",
         desc: "default lint description",
         deprecation: None,
-        module: "suspicious_chained_operators",
+        module: "suspicious_operation_groupings",
     },
     Lint {
         name: "suspicious_else_formatting",

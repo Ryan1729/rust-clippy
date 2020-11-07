@@ -26,14 +26,14 @@ declare_clippy_lint! {
     /// ```rust
     /// // example code which does not raise clippy warning
     /// ```
-    pub SUSPICIOUS_CHAINED_OPERATORS,
+    pub SUSPICIOUS_OPERATION_GROUPINGS,
     correctness,
     "default lint description"
 }
 
-declare_lint_pass!(SuspiciousChainedOperators => [SUSPICIOUS_CHAINED_OPERATORS]);
+declare_lint_pass!(SuspiciousOperationGroupings => [SUSPICIOUS_OPERATION_GROUPINGS]);
 
-impl EarlyLintPass for SuspiciousChainedOperators {
+impl EarlyLintPass for SuspiciousOperationGroupings {
     fn check_expr(&mut self, cx: &EarlyContext<'_>, expr: &Expr) {
         if expr.span.from_expansion() {
             return;
@@ -116,7 +116,7 @@ impl EarlyLintPass for SuspiciousChainedOperators {
                     ) {
                         span_lint_and_sugg(
                             cx,
-                            SUSPICIOUS_CHAINED_OPERATORS,
+                            SUSPICIOUS_OPERATION_GROUPINGS,
                             binop.span,
                             "This sequence of operators looks suspiciously like a bug.",
                             "Did you mean",
