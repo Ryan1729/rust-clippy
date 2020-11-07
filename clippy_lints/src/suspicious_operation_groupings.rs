@@ -59,7 +59,7 @@ declare_clippy_lint! {
     /// ```
     pub SUSPICIOUS_OPERATION_GROUPINGS,
     correctness,
-    "groupings of binary operators that look suspiciously like typos"
+    "groupings of binary operations that look suspiciously like typos"
 }
 
 declare_lint_pass!(SuspiciousOperationGroupings => [SUSPICIOUS_OPERATION_GROUPINGS]);
@@ -78,11 +78,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
             // we want the lints to be emitted in a consistent order. Besides,
             // m, (the number of distinct `BinOpKind`s in `binops`)
             // will often be small, and does hav an upper limit.
-            for b in &binops {
-                if !op_types.contains(&b.op) {
-                    op_types.push(b.op);
-                }
-            }
+            binops.iter().map(|b| b.op).filter(|op| !op_types.contains(op)).for_each(|op| op_types.push(op));
 
             for op_type in op_types {
                 let ops: Vec<_> = binops.iter().filter(|b| b.op == op_type).collect();
