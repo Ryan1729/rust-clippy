@@ -77,8 +77,12 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
             // We could use a hashmap, etc. to avoid being O(n*m) here, but
             // we want the lints to be emitted in a consistent order. Besides,
             // m, (the number of distinct `BinOpKind`s in `binops`)
-            // will often be small, and does hav an upper limit.
-            binops.iter().map(|b| b.op).filter(|op| !op_types.contains(op)).for_each(|op| op_types.push(op));
+            // will often be small, and does have an upper limit.
+            binops.iter().map(|b| b.op).for_each(|op| {
+                if !op_types.contains(op) {
+                    op_types.push(op);
+                }
+            });
 
             for op_type in op_types {
                 let ops: Vec<_> = binops.iter().filter(|b| b.op == op_type).collect();
