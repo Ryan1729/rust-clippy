@@ -79,7 +79,7 @@ impl EarlyLintPass for SuspiciousOperationGroupings {
             // m, (the number of distinct `BinOpKind`s in `binops`)
             // will often be small, and does have an upper limit.
             binops.iter().map(|b| b.op).for_each(|op| {
-                if !op_types.contains(op) {
+                if !op_types.contains(&op) {
                     op_types.push(op);
                 }
             });
